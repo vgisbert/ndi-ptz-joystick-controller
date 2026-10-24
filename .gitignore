@@ -37,6 +37,11 @@ STITCH/
 *.tmp
 *.log
 
+# Cachés de Python (ejecución de backup.py)
+__pycache__/
+*.py[cod]
+*$py.class
+
 # Dependencias Node / Frontend
 node_modules/
 .npm/

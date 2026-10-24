@@ -8,25 +8,33 @@ BACKUPS_DIR = os.path.join(BASE_DIR, "backups")
 
 # Lista exhaustiva y categorizada de elementos a respaldar
 FILES_TO_BACKUP = [
+    # Configuración raíz y control de versiones
+    ".gitignore",
+    "package.json",
+    "LICENSE",
+    "README.md",
+    
     # Frontend y recursos de interfaz
     "frontend",
-    "package.json",
     
     # Rust Core (src-tauri)
     "src-tauri/Cargo.toml",
     "src-tauri/tauri.conf.json",
     "src-tauri/build.rs",
-    "src-tauri/capabilities",
     "src-tauri/src",
     
     # Lanzadores y mantenimiento
     "arrancar.bat",
+    "compilar_y_empaquetar.bat",
     "backup.py",
     
-    # Documentación y auditorías técnicas
+    # Documentación, auditorías técnicas y guías maestras
     "DOCUMENTACION.md",
     "DOCUMENTACION_NUROUM_V403.md",
-    "PLAN_DE_TRABAJO.md"
+    "PLAN_DE_TRABAJO.md",
+    "GUIA_COMPILACION_NATIVA_TAURI_RUST.md",
+    "GUIA_CONTEXTO_PROBLEMAS_ENTORNO_Y_BACKUP.md",
+    "Guia_Inicio_Nuevos_Proyectos.md"
 ]
 
 def make_backup():

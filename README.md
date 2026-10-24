@@ -50,7 +50,12 @@ Durante el desarrollo del proyecto se realizó una auditoría completa del firmw
 3. **Colisión de Nombres en Flujos NDI:**
    El firmware de fábrica de la cámara anuncia un descriptor duplicado `LOCALHOST (Nuroum Cam V403-)` en todas las unidades. La aplicación diferencia inequívocamente cada cámara mediante su IP y dirección MAC física.
 
-> 📖 **Para un análisis técnico en profundidad:** Consulta el informe completo en [`DOCUMENTACION_NUROUM_V403.md`](DOCUMENTACION_NUROUM_V403.md) y la arquitectura de red en [`DOCUMENTACION.md`](DOCUMENTACION.md).
+> 📖 **Para un análisis técnico en profundidad y guías operativas:**
+> * [`DOCUMENTACION.md`](DOCUMENTACION.md): Arquitectura de red, comunicación VISCA-over-IP y multiventana.
+> * [`DOCUMENTACION_NUROUM_V403.md`](DOCUMENTACION_NUROUM_V403.md): Auditoría completa de firmware e ingeniería inversa de hardware.
+> * [`GUIA_COMPILACION_NATIVA_TAURI_RUST.md`](GUIA_COMPILACION_NATIVA_TAURI_RUST.md): Guía maestra del sistema de compilación portable ultraligero con Rust y Tauri v2.
+> * [`GUIA_CONTEXTO_PROBLEMAS_ENTORNO_Y_BACKUP.md`](GUIA_CONTEXTO_PROBLEMAS_ENTORNO_Y_BACKUP.md): Diagnóstico de entornos Windows y arquitectura del script de resguardo `backup.py`.
+> * [`Guia_Inicio_Nuevos_Proyectos.md`](Guia_Inicio_Nuevos_Proyectos.md): Requerimientos y estándares de estructura de proyectos.
 
 ---
 
@@ -82,8 +87,12 @@ Durante el desarrollo del proyecto se realizó una auditoría completa del firmw
 │
 ├── arrancar.bat                  # Script lanzador en modo desarrollo
 ├── compilar_y_empaquetar.bat     # Generador del paquete binario portable Release
+├── backup.py                     # Script de copia de seguridad integral
 ├── DOCUMENTACION.md              # Documentación técnica de arquitectura
 ├── DOCUMENTACION_NUROUM_V403.md  # Informe de ingeniería inversa de firmware
+├── GUIA_COMPILACION_NATIVA_TAURI_RUST.md       # Guía de empaquetado nativo portable
+├── GUIA_CONTEXTO_PROBLEMAS_ENTORNO_Y_BACKUP.md # Diagnóstico de entornos y respaldos
+├── Guia_Inicio_Nuevos_Proyectos.md             # Buenas prácticas y arquitectura de proyectos
 └── LICENSE                       # Licencia MIT
 ```
 
