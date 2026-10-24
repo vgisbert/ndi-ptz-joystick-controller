@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title data-i18n="app_title_settings">Controlador PTZ NDI — Configuración</title>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..800&family=Space+Grotesk:wght@500..700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #111319; overscroll-behavior: none; user-select: none; -webkit-user-select: none; overflow: hidden; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #3b494b; border-radius: 2px; }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-dim": "#111319",
+            "surface-lowest": "#0b0e13",
+            "surface-low": "#191c21",
+            "surface": "#1d2025",
+            "surface-high": "#272a30",
+            "surface-highest": "#32353a",
+            "cyan-tac": "#00f0ff",
+            "amber-tac": "#feb300",
+            "red-tac": "#ff1744",
+            "red-dim": "#93000a",
+            "txt-main": "#e1e2e9",
+            "txt-muted": "#849495",
+            "border-tac": "#3b494b"
+          },
+          fontFamily: {
+            "sans": ["Space Grotesk", "sans-serif"],
+            "mono": ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-surface-dim text-txt-main font-mono text-[11px] antialiased flex flex-col h-screen justify-between p-1.5 gap-1.5">
+
+  <!-- ================= 1. BARRA SUPERIOR CON BOTÓN VOLVER, BOTÓN IDIOMA Y BOTONES CAM DINÁMICOS ================= -->
+  <header class="flex items-center justify-between bg-surface-low px-2 py-1 rounded border border-border-tac/40 shrink-0">
+    <div class="flex items-center gap-1.5">
+      <a href="index.html" class="px-2 py-0.5 rounded bg-cyan-tac text-surface-lowest font-bold text-[10px] flex items-center gap-1 shadow-[0_0_6px_rgba(0,240,255,0.4)] hover:opacity-90 transition-opacity shrink-0">
+        <span class="material-symbols-outlined text-[13px]">arrow_back</span>
+        <span data-i18n="btn_back">VOLVER</span>
+      </a>
+
+      <!-- BOTÓN DE CAMBIO DE IDIOMA COMPACTO (SP / EN / ...) -->
+      <button id="btn-lang" class="px-1.5 py-0.5 rounded bg-surface-high hover:bg-surface-highest text-cyan-tac font-bold text-[10px] border border-border-tac/40 transition-colors cursor-pointer" data-i18n-title="btn_lang_title" title="Cambiar idioma">
+        SP
+      </button>
+    </div>
+
+    <div id="settings-cam-tabs" class="flex items-center gap-1 overflow-x-auto max-w-[200px]">
+      <span class="px-2 py-0.5 rounded bg-surface-high text-txt-muted font-bold text-[9px]" data-i18n="tabs_searching">BUSCANDO...</span>
+    </div>
+  </header>
+
+  <!-- ================= 2. CONTENIDO COMPACTO DE CONFIGURACIÓN ================= -->
+  <main class="flex-1 flex flex-col justify-between gap-1.5 min-h-0">
+
+    <!-- Datos de Red, MAC y Nombre de Cámara -->
+    <section class="bg-surface p-2 rounded border border-border-tac/30 flex flex-col gap-1.5 shrink-0">
+      <div class="flex items-center justify-between border-b border-border-tac/30 pb-1">
+        <span class="text-cyan-tac font-bold text-[10px] uppercase" data-i18n="sec_identification">Identificación (Por MAC)</span>
+        <span id="settings-cam-mac" class="text-[9px] text-amber-tac font-bold">MAC: --:--:--:--:--:--</span>
+      </div>
+
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5">
+          <label class="text-[9px] text-txt-muted" data-i18n="lbl_cam_name">NOM:</label>
+          <input id="cfg-cam-name" type="text" value="CÁM 1" maxlength="8" class="w-[9.5ch] px-1.5 py-0.5 rounded bg-surface-lowest border border-border-tac/50 text-txt-main text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+        </div>
+
+        <!-- Botón IP (abre panel con última IP para OBS, MAC, estado ON/OFFLINE y BÚSQUEDA en red) -->
+        <button id="btn-open-ip-modal" class="px-2.5 py-1 rounded bg-surface-high hover:bg-surface-highest text-cyan-tac font-bold text-[10px] border border-cyan-tac/40 flex items-center gap-1.5 shadow-[0_0_6px_rgba(0,240,255,0.15)] active:scale-95 transition-all" data-i18n-title="btn_ip_title" title="Ver IP para OBS, estado ON/OFFLINE y buscar cámaras en la red">
+          <span id="btn-ip-dot" class="w-2 h-2 rounded-full bg-cyan-tac shadow-[0_0_5px_#00f0ff]"></span>
+          <span>IP</span>
+          <span id="btn-ip-preview" class="text-[9px] text-txt-main font-normal">---.---.---.---</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Etiquetas de los 8 Puntos de Parada (Cuadros ajustados a 8 caracteres) -->
+    <section class="bg-surface p-2 rounded border border-border-tac/30 flex flex-col gap-1.5 flex-1 justify-between">
+      <div class="flex items-center justify-between border-b border-border-tac/30 pb-1">
+        <span class="text-amber-tac font-bold text-[10px] uppercase" data-i18n="sec_presets_title">Etiquetas de Puntos (1-8)</span>
+        <span class="text-[9px] text-txt-muted" data-i18n="sec_presets_by_mac">GUARDADO POR MAC</span>
+      </div>
+
+      <div id="presets-list" class="grid grid-cols-2 gap-x-2 gap-y-1.5 my-auto">
+        <div class="flex items-center justify-between bg-surface-low px-1.5 py-1 rounded border border-border-tac/20">
+          <span class="text-amber-tac font-bold text-[10px]">P1</span>
+          <input data-preset="1" type="text" value="ESCEN." maxlength="8" class="preset-input w-[9.5ch] px-1 py-0.5 rounded bg-surface-lowest border border-border-tac/40 text-txt-main uppercase text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+          <button data-test-preset="1" class="btn-test px-1.5 py-0.5 rounded bg-surface-high hover:bg-cyan-tac hover:text-surface-lowest text-cyan-tac text-[9px] font-bold" data-i18n-title="btn_go_title" data-i18n="btn_go" title="Ir al punto 1">IR</button>
+        </div>
+        <div class="flex items-center justify-between bg-surface-low px-1.5 py-1 rounded border border-border-tac/20">
+          <span class="text-amber-tac font-bold text-[10px]">P2</span>
+          <input data-preset="2" type="text" value="TECLADO" maxlength="8" class="preset-input w-[9.5ch] px-1 py-0.5 rounded bg-surface-lowest border border-border-tac/40 text-txt-main uppercase text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+          <button data-test-preset="2" class="btn-test px-1.5 py-0.5 rounded bg-surface-high hover:bg-cyan-tac hover:text-surface-lowest text-cyan-tac text-[9px] font-bold" data-i18n-title="btn_go_title" data-i18n="btn_go" title="Ir al punto 2">IR</button>
+        </div>
+        <div class="flex items-center justify-between bg-surface-low px-1.5 py-1 rounded border border-border-tac/20">
+          <span class="text-amber-tac font-bold text-[10px]">P3</span>
+          <input data-preset="3" type="text" value="BATERÍA" maxlength="8" class="preset-input w-[9.5ch] px-1 py-0.5 rounded bg-surface-lowest border border-border-tac/40 text-txt-main uppercase text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+          <button data-test-preset="3" class="btn-test px-1.5 py-0.5 rounded bg-surface-high hover:bg-cyan-tac hover:text-surface-lowest text-cyan-tac text-[9px] font-bold" data-i18n-title="btn_go_title" data-i18n="btn_go" title="Ir al punto 3">IR</button>
+        </div>
+        <div class="flex items-center justify-between bg-surface-low px-1.5 py-1 rounded border border-border-tac/20">
+          <span class="text-amber-tac font-bold text-[10px]">P4</span>
+          <input data-preset="4" type="text" value="VOZ" maxlength="8" class="preset-input w-[9.5ch] px-1 py-0.5 rounded bg-surface-lowest border border-border-tac/40 text-txt-main uppercase text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+          <button data-test-preset="4" class="btn-test px-1.5 py-0.5 rounded bg-surface-high hover:bg-cyan-tac hover:text-surface-lowest text-cyan-tac text-[9px] font-bold" data-i18n-title="btn_go_title" data-i18n="btn_go" title="Ir al punto 4">IR</button>
+        </div>
+        <div class="flex items-center justify-between bg-surface-low px-1.5 py-1 rounded border border-border-tac/20">
+          <span class="text-amber-tac font-bold text-[10px]">P5</span>
+          <input data-preset="5" type="text" value="BAJO" maxlength="8" class="preset-input w-[9.5ch] px-1 py-0.5 rounded bg-surface-lowest border border-border-tac/40 text-txt-main uppercase text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+          <button data-test-preset="5" class="btn-test px-1.5 py-0.5 rounded bg-surface-high hover:bg-cyan-tac hover:text-surface-lowest text-cyan-tac text-[9px] font-bold" data-i18n-title="btn_go_title" data-i18n="btn_go" title="Ir al punto 5">IR</button>
+        </div>
+        <div class="flex items-center justify-between bg-surface-low px-1.5 py-1 rounded border border-border-tac/20">
+          <span class="text-amber-tac font-bold text-[10px]">P6</span>
+          <input data-preset="6" type="text" value="GUIT." maxlength="8" class="preset-input w-[9.5ch] px-1 py-0.5 rounded bg-surface-lowest border border-border-tac/40 text-txt-main uppercase text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+          <button data-test-preset="6" class="btn-test px-1.5 py-0.5 rounded bg-surface-high hover:bg-cyan-tac hover:text-surface-lowest text-cyan-tac text-[9px] font-bold" data-i18n-title="btn_go_title" data-i18n="btn_go" title="Ir al punto 6">IR</button>
+        </div>
+        <div class="flex items-center justify-between bg-surface-low px-1.5 py-1 rounded border border-border-tac/20">
+          <span class="text-amber-tac font-bold text-[10px]">P7</span>
+          <input data-preset="7" type="text" value="PÚBLICO" maxlength="8" class="preset-input w-[9.5ch] px-1 py-0.5 rounded bg-surface-lowest border border-border-tac/40 text-txt-main uppercase text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+          <button data-test-preset="7" class="btn-test px-1.5 py-0.5 rounded bg-surface-high hover:bg-cyan-tac hover:text-surface-lowest text-cyan-tac text-[9px] font-bold" data-i18n-title="btn_go_title" data-i18n="btn_go" title="Ir al punto 7">IR</button>
+        </div>
+        <div class="flex items-center justify-between bg-surface-low px-1.5 py-1 rounded border border-border-tac/20">
+          <span class="text-amber-tac font-bold text-[10px]">P8</span>
+          <input data-preset="8" type="text" value="TELÓN" maxlength="8" class="preset-input w-[9.5ch] px-1 py-0.5 rounded bg-surface-lowest border border-border-tac/40 text-txt-main uppercase text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+          <button data-test-preset="8" class="btn-test px-1.5 py-0.5 rounded bg-surface-high hover:bg-cyan-tac hover:text-surface-lowest text-cyan-tac text-[9px] font-bold" data-i18n-title="btn_go_title" data-i18n="btn_go" title="Ir al punto 8">IR</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= 3. PIE DE ACCIONES (GUARDAR Y VOLVER) ================= -->
+  <footer class="flex items-center justify-between gap-1.5 bg-surface-low p-1.5 rounded border border-border-tac/40 shrink-0">
+    <button id="btn-export-json" class="px-2 py-1 rounded bg-surface-high hover:bg-surface-highest text-txt-main font-bold text-[10px] flex items-center gap-1 border border-border-tac/40">
+      <span class="material-symbols-outlined text-[13px] text-cyan-tac">download</span>
+      <span data-i18n="btn_export">EXPORTAR</span>
+    </button>
+
+    <button id="btn-save-and-back" class="flex-1 py-1 rounded bg-cyan-tac text-surface-lowest font-bold text-[10px] flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(0,240,255,0.4)] hover:opacity-95">
+      <span class="material-symbols-outlined text-[14px]">save</span>
+      <span data-i18n="btn_save_and_back">GUARDAR Y VOLVER</span>
+    </button>
+  </footer>
+
+  <!-- ================= MODAL DE IP, MAC, ESTADO ON/OFFLINE Y BÚSQUEDA EN RED ================= -->
+  <div id="ip-config-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-[2px] flex items-center justify-center p-3">
+    <div class="w-full max-w-xs rounded-lg bg-surface border border-border-tac p-3 flex flex-col gap-2 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-border-tac/40 pb-1">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[15px] text-cyan-tac">router</span>
+          <span id="ip-modal-title" class="text-cyan-tac font-bold text-[11px] uppercase">Red · CÁM 1</span>
+        </div>
+        <button id="btn-close-ip-modal" class="text-txt-muted hover:text-white">
+          <span class="material-symbols-outlined text-[16px]">close</span>
+        </button>
+      </div>
+
+      <!-- Indicador de Estado ON / OFFLINE + MAC -->
+      <div class="flex flex-col gap-1 bg-surface-lowest px-2.5 py-1.5 rounded border border-border-tac/40">
+        <div class="flex items-center justify-between">
+          <span class="text-[9px] text-txt-muted uppercase" data-i18n="lbl_cam_status">Estado Cámara:</span>
+          <div id="ip-status-badge" class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-high border border-border-tac/40">
+            <span id="ip-status-dot" class="w-2 h-2 rounded-full bg-txt-muted"></span>
+            <span id="ip-status-text" class="font-bold text-[10px] text-txt-main" data-i18n="status_checking">COMPROBANDO...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between border-t border-border-tac/20 pt-1">
+          <span class="text-[9px] text-txt-muted uppercase" data-i18n="lbl_mac_id">ID Físico (MAC):</span>
+          <span id="ip-modal-mac" class="text-[10px] text-amber-tac font-bold">--:--:--:--:--:--</span>
+        </div>
+      </div>
+
+      <!-- Última IP Asignada (útil para OBS / NDI / RTSP) -->
+      <div class="flex flex-col gap-1">
+        <label class="text-[9px] text-txt-muted uppercase" data-i18n="lbl_last_ip">Última IP Asignada (para OBS / UDP 1259):</label>
+        <div class="flex items-center gap-1.5">
+          <input id="cfg-cam-ip" type="text" value="192.168.1.101" maxlength="15" class="flex-1 px-2 py-1 rounded bg-surface-lowest border border-border-tac text-cyan-tac font-bold text-xs text-center focus:outline-none focus:border-cyan-tac">
+          <button id="btn-verify-ip" class="px-2 py-1 rounded bg-surface-high hover:bg-surface-highest text-txt-main font-bold text-[10px] border border-border-tac/40" data-i18n-title="btn_verify_ip_title" title="Probar esta IP">
+            <span data-i18n="btn_verify_ip">PROBAR</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Botón BÚSQUEDA en la red -->
+      <div class="flex flex-col gap-1 pt-0.5">
+        <button id="btn-scan-network" class="w-full py-1.5 px-2.5 rounded bg-amber-tac hover:opacity-95 active:scale-[0.99] text-surface-lowest font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-[0_0_8px_rgba(254,179,0,0.35)] transition-all">
+          <span id="scan-icon" class="material-symbols-outlined text-[15px]">travel_explore</span>
+          <span id="scan-btn-text" data-i18n="btn_scan_network">BÚSQUEDA EN LA RED</span>
+        </button>
+        <span id="ip-scan-feedback" class="text-[9px] text-txt-muted text-center min-h-[13px]" data-i18n="scan_feedback_default">
+          Detecta cámaras activas y reasignaciones DHCP
+        </span>
+      </div>
+
+      <!-- Pie del Modal -->
+      <div class="flex justify-end gap-1.5 border-t border-border-tac/30 pt-1.5">
+        <button id="btn-accept-ip-modal" class="w-full py-1 rounded bg-cyan-tac text-surface-lowest font-bold text-[10px] hover:opacity-95" data-i18n="btn_accept">
+          ACEPTAR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="i18n.js"></script>
+  <script src="ndi_ptz_client.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      let activeCameraId = localStorage.getItem('ndi_active_cam') || '';
+      let onlineCameras = [];
+      let camerasMap = {};
+
+      const settingsCamTabs = document.getElementById('settings-cam-tabs');
+      const settingsCamMac = document.getElementById('settings-cam-mac');
+      const cfgCamName = document.getElementById('cfg-cam-name');
+      const cfgCamIp = document.getElementById('cfg-cam-ip');
+      const presetInputs = document.querySelectorAll('.preset-input');
+
+      const btnOpenIpModal = document.getElementById('btn-open-ip-modal');
+      const btnIpDot = document.getElementById('btn-ip-dot');
+      const btnIpPreview = document.getElementById('btn-ip-preview');
+
+      const ipConfigModal = document.getElementById('ip-config-modal');
+      const ipModalTitle = document.getElementById('ip-modal-title');
+      const ipModalMac = document.getElementById('ip-modal-mac');
+      const ipStatusBadge = document.getElementById('ip-status-badge');
+      const ipStatusDot = document.getElementById('ip-status-dot');
+      const ipStatusText = document.getElementById('ip-status-text');
+      const btnVerifyIp = document.getElementById('btn-verify-ip');
+      const btnScanNetwork = document.getElementById('btn-scan-network');
+      const scanIcon = document.getElementById('scan-icon');
+      const scanBtnText = document.getElementById('scan-btn-text');
+      const ipScanFeedback = document.getElementById('ip-scan-feedback');
+
+      function loadMacProfiles() {
+        try {
+          const raw = localStorage.getItem('ndi_cam_profiles_mac');
+          return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveMacProfiles(profiles) {
+        localStorage.setItem('ndi_cam_profiles_mac', JSON.stringify(profiles));
+      }
+
+      function ensureCameraProfile(cam, index) {
+        const profiles = loadMacProfiles();
+        const macKey = cam.id;
+        const currentDefaults = window.I18n.getDefaultPresets();
+        const defaultCamName = `${window.I18n.t('cam_prefix')} ${index + 1}`;
+
+        if (!profiles[macKey]) {
+          profiles[macKey] = {
+            id: cam.id,
+            mac: cam.mac || '',
+            customName: '',
+            lastIp: cam.ip,
+            port: cam.visca_port || 1259,
+            presets: [...currentDefaults]
+          };
+        } else {
+          profiles[macKey].mac = cam.mac || profiles[macKey].mac || '';
+          profiles[macKey].lastIp = cam.ip || profiles[macKey].lastIp;
+          if (!Array.isArray(profiles[macKey].presets) || profiles[macKey].presets.length < 8) {
+            profiles[macKey].presets = [...currentDefaults];
+          }
+        }
+        saveMacProfiles(profiles);
+        const prof = profiles[macKey];
+        const displayName = (prof.customName && prof.customName.trim()) ? prof.customName.trim() : defaultCamName;
+        return { ...prof, displayName, defaultLabel: defaultCamName };
+      }
+
+      function setOnlineVisuals(isOnline, rttMs = null) {
+        if (isOnline) {
+          btnIpDot.className = 'w-2 h-2 rounded-full bg-cyan-tac shadow-[0_0_5px_#00f0ff]';
+          ipStatusBadge.className = 'flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-tac/15 border border-cyan-tac/50';
+          ipStatusDot.className = 'w-2 h-2 rounded-full bg-cyan-tac shadow-[0_0_5px_#00f0ff]';
+          ipStatusText.textContent = rttMs ? `ONLINE · ${rttMs}ms` : 'ONLINE';
+          ipStatusText.className = 'font-bold text-[10px] text-cyan-tac';
+        } else {
+          btnIpDot.className = 'w-2 h-2 rounded-full bg-red-tac shadow-[0_0_5px_#ff1744]';
+          ipStatusBadge.className = 'flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-dim/60 border border-red-tac';
+          ipStatusDot.className = 'w-2 h-2 rounded-full bg-red-tac animate-pulse';
+          ipStatusText.textContent = 'OFFLINE';
+          ipStatusText.className = 'font-bold text-[10px] text-red-tac';
+        }
+      }
+
+      function renderDynamicTabs() {
+        settingsCamTabs.innerHTML = '';
+
+        if (onlineCameras.length === 0) {
+          const badge = document.createElement('span');
+          badge.className = 'px-2 py-0.5 rounded bg-surface-high text-red-tac font-bold text-[9px]';
+          badge.textContent = window.I18n.t('tabs_no_cameras');
+          settingsCamTabs.appendChild(badge);
+          setOnlineVisuals(false);
+          return;
+        }
+
+        if (!onlineCameras.some((c) => c.id === activeCameraId)) {
+          activeCameraId = onlineCameras[0].id;
+          localStorage.setItem('ndi_active_cam', activeCameraId);
+        }
+
+        onlineCameras.forEach((cam, idx) => {
+          const prof = ensureCameraProfile(cam, idx);
+          camerasMap[cam.id] = { ...cam, displayName: prof.displayName, defaultLabel: prof.defaultLabel };
+
+          const btn = document.createElement('button');
+          btn.setAttribute('data-cam-id', cam.id);
+          btn.title = `MAC: ${cam.mac} · IP: ${cam.ip}`;
+          if (cam.id === activeCameraId) {
+            btn.className = 'cam-tab px-2 py-0.5 rounded bg-amber-tac text-surface-lowest font-bold text-[10px] shrink-0';
+          } else {
+            btn.className = 'cam-tab px-2 py-0.5 rounded bg-surface-high text-txt-muted hover:text-txt-main font-bold text-[10px] shrink-0';
+          }
+          btn.textContent = prof.displayName;
+          btn.addEventListener('click', () => {
+            saveCurrentForm();
+            renderCameraForm(cam.id);
+          });
+          settingsCamTabs.appendChild(btn);
+        });
+      }
+
+      function renderCameraForm(camId) {
+        if (!camId) return;
+        activeCameraId = camId;
+        localStorage.setItem('ndi_active_cam', camId);
+
+        const idx = Math.max(0, onlineCameras.findIndex((c) => c.id === camId));
+        const defaultCamName = `${window.I18n.t('cam_prefix')} ${idx + 1}`;
+        const cam = camerasMap[camId] || onlineCameras[idx];
+        const profiles = loadMacProfiles();
+        const prof = profiles[camId] || (cam ? ensureCameraProfile(cam, idx) : null);
+        const defaultPresets = window.I18n.getDefaultPresets();
+
+        if (prof) {
+          const shownName = (prof.customName && prof.customName.trim()) ? prof.customName.trim() : defaultCamName;
+          cfgCamName.value = shownName;
+          cfgCamIp.value = (cam && cam.ip) ? cam.ip : (prof.lastIp || '');
+          btnIpPreview.textContent = cfgCamIp.value || '---.---.---.---';
+          const macStr = (cam && cam.mac) ? cam.mac : (prof.mac || 'N/A');
+          settingsCamMac.textContent = `MAC: ${macStr}`;
+          ipModalMac.textContent = macStr;
+          ipModalTitle.textContent = window.I18n.t('modal_network_title', { name: shownName });
+
+          presetInputs.forEach((inp, i) => {
+            inp.value = (prof.presets && prof.presets[i]) ? prof.presets[i] : defaultPresets[i];
+          });
+        }
+
+        renderDynamicTabs();
+        if (cam && cam.is_online) {
+          setOnlineVisuals(true, cam.latency_ms || 2);
+        } else {
+          setOnlineVisuals(false);
+        }
+      }
+
+      function saveCurrentForm() {
+        if (!activeCameraId) return;
+        const profiles = loadMacProfiles();
+        const idx = Math.max(0, onlineCameras.findIndex((c) => c.id === activeCameraId));
+        const defaultLabel = `${window.I18n.t('cam_prefix')} ${idx + 1}`;
+        const enteredName = cfgCamName.value.trim();
+        const defaultPresets = window.I18n.getDefaultPresets();
+
+        const presets = [];
+        presetInputs.forEach((inp, i) => {
+          presets.push(inp.value.trim().toUpperCase() || defaultPresets[i]);
+        });
+
+        const existing = profiles[activeCameraId] || {};
+        const cam = camerasMap[activeCameraId] || {};
+        profiles[activeCameraId] = {
+          id: activeCameraId,
+          mac: cam.mac || existing.mac || '',
+          customName: (enteredName && enteredName !== defaultLabel) ? enteredName : (enteredName || defaultLabel),
+          lastIp: cfgCamIp.value.trim() || cam.ip || existing.lastIp || '',
+          port: 1259,
+          presets
+        };
+
+        saveMacProfiles(profiles);
+        btnIpPreview.textContent = profiles[activeCameraId].lastIp;
+        renderDynamicTabs();
+      }
+
+      let lastTopologySig = null;
+
+      function handleCamerasListUpdate(list, forceRender = false) {
+        const filtered = Array.isArray(list) ? list.filter((c) => c.is_online) : [];
+        const sig = filtered.map((c) => `${c.id}:${c.ip}:${c.mac}`).join('|');
+        if (!forceRender && sig === lastTopologySig) {
+          return;
+        }
+        lastTopologySig = sig;
+        onlineCameras = filtered;
+        renderDynamicTabs();
+        if (onlineCameras.length > 0) {
+          renderCameraForm(activeCameraId || onlineCameras[0].id);
+        }
+      }
+
+      // Abrir modal al pulsar el botón IP
+      btnOpenIpModal.addEventListener('click', async () => {
+        saveCurrentForm();
+        ipConfigModal.classList.remove('hidden');
+        if (activeCameraId) {
+          try {
+            const rtt = await window.NDIPtz.ping(activeCameraId);
+            setOnlineVisuals(true, rtt);
+            ipScanFeedback.textContent = window.I18n.t('feedback_cam_active_obs', { ip: cfgCamIp.value.trim() });
+            ipScanFeedback.className = 'text-[9px] text-cyan-tac text-center min-h-[13px]';
+          } catch (e) {
+            setOnlineVisuals(false);
+            ipScanFeedback.textContent = window.I18n.t('feedback_no_response_scan');
+            ipScanFeedback.className = 'text-[9px] text-red-tac text-center min-h-[13px]';
+          }
+        }
+      });
+
+      const closeIpModal = () => {
+        saveCurrentForm();
+        ipConfigModal.classList.add('hidden');
+      };
+
+      document.getElementById('btn-close-ip-modal').addEventListener('click', closeIpModal);
+      document.getElementById('btn-accept-ip-modal').addEventListener('click', closeIpModal);
+
+      // Probar IP manual
+      btnVerifyIp.addEventListener('click', async () => {
+        const ip = cfgCamIp.value.trim();
+        if (!ip) return;
+        ipStatusText.textContent = window.I18n.t('status_checking');
+        try {
+          const cam = await window.NDIPtz.addCamera(ip, 1259, cfgCamName.value.trim());
+          const list = await window.NDIPtz.getCameras();
+          activeCameraId = cam.id;
+          handleCamerasListUpdate(list, true);
+          setOnlineVisuals(true, cam.latency_ms || 2);
+          saveCurrentForm();
+          ipScanFeedback.textContent = window.I18n.t('feedback_response_ok', { ip, mac: cam.mac || 'N/A' });
+          ipScanFeedback.className = 'text-[9px] text-cyan-tac font-bold text-center min-h-[13px]';
+        } catch (e) {
+          setOnlineVisuals(false);
+          ipScanFeedback.textContent = window.I18n.t('feedback_no_response_ip', { ip });
+          ipScanFeedback.className = 'text-[9px] text-red-tac font-bold text-center min-h-[13px]';
+        }
+      });
+
+      // Búsqueda en la red de todas las cámaras online
+      btnScanNetwork.addEventListener('click', async () => {
+        btnScanNetwork.disabled = true;
+        scanIcon.classList.add('animate-spin');
+        scanBtnText.textContent = window.I18n.t('scan_searching_btn');
+        ipScanFeedback.textContent = window.I18n.t('scan_scanning_feedback');
+        ipScanFeedback.className = 'text-[9px] text-amber-tac text-center min-h-[13px]';
+
+        try {
+          const list = await window.NDIPtz.scanAllCameras();
+          handleCamerasListUpdate(list, true);
+          const currentCam = list.find((c) => c.id === activeCameraId) || list[0];
+          if (currentCam && currentCam.is_online) {
+            cfgCamIp.value = currentCam.ip;
+            saveCurrentForm();
+            setOnlineVisuals(true, currentCam.latency_ms || 2);
+            ipScanFeedback.textContent = window.I18n.t('feedback_cams_found', { n: list.length, ip: currentCam.ip });
+            ipScanFeedback.className = 'text-[9px] text-cyan-tac font-bold text-center min-h-[13px]';
+          } else {
+            setOnlineVisuals(false);
+            ipScanFeedback.textContent = window.I18n.t('feedback_no_cams_found');
+            ipScanFeedback.className = 'text-[9px] text-red-tac font-bold text-center min-h-[13px]';
+          }
+        } catch (err) {
+          setOnlineVisuals(false);
+          ipScanFeedback.textContent = window.I18n.t('feedback_network_error');
+          ipScanFeedback.className = 'text-[9px] text-red-tac font-bold text-center min-h-[13px]';
+        } finally {
+          btnScanNetwork.disabled = false;
+          scanIcon.classList.remove('animate-spin');
+          scanBtnText.textContent = window.I18n.t('btn_scan_network');
+        }
+      });
+
+      document.querySelectorAll('.btn-test').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!activeCameraId) return;
+          const num = parseInt(btn.getAttribute('data-test-preset'), 10);
+          await window.NDIPtz.preset(activeCameraId, 'recall', num);
+        });
+      });
+
+      document.getElementById('btn-export-json').addEventListener('click', () => {
+        saveCurrentForm();
+        const profiles = loadMacProfiles();
+        const blob = new Blob([JSON.stringify(profiles, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'ndi_ptz_perfiles_mac.json';
+        a.click();
+      });
+
+      document.getElementById('btn-save-and-back').addEventListener('click', () => {
+        saveCurrentForm();
+        window.location.href = 'index.html';
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (!ipConfigModal.classList.contains('hidden')) {
+            closeIpModal();
+          } else {
+            saveCurrentForm();
+            window.location.href = 'index.html';
+          }
+        }
+      });
+
+      // Escuchar cambios de idioma en vivo
+      window.I18n.onLanguageChange(() => {
+        renderDynamicTabs();
+        if (activeCameraId) {
+          renderCameraForm(activeCameraId);
+        }
+      });
+
+      window.NDIPtz.onCamerasUpdated((list) => {
+        handleCamerasListUpdate(list);
+      });
+
+      setInterval(async () => {
+        try {
+          const list = await window.NDIPtz.getCameras();
+          handleCamerasListUpdate(list);
+        } catch (e) {}
+      }, 1500);
+
+      window.NDIPtz.getCameras().then((list) => {
+        if (list && list.length > 0) {
+          handleCamerasListUpdate(list, true);
+        } else {
+          window.NDIPtz.scanAllCameras().then((scanned) => handleCamerasListUpdate(scanned, true)).catch(() => {});
+        }
+      });
+    });
+  </script>
+</body>
+</html>

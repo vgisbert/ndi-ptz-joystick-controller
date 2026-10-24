@@ -1,0 +1,71 @@
+import os
+import shutil
+import datetime
+
+# Directorio base y de copias de seguridad
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKUPS_DIR = os.path.join(BASE_DIR, "backups")
+
+# Lista exhaustiva y categorizada de elementos a respaldar
+FILES_TO_BACKUP = [
+    # Frontend y recursos de interfaz
+    "frontend",
+    "package.json",
+    
+    # Rust Core (src-tauri)
+    "src-tauri/Cargo.toml",
+    "src-tauri/tauri.conf.json",
+    "src-tauri/build.rs",
+    "src-tauri/capabilities",
+    "src-tauri/src",
+    
+    # Diseños y plantillas base
+    "STITCH",
+    
+    # Lanzadores y mantenimiento
+    "arrancar.bat",
+    "backup.py",
+    
+    # Documentación y auditorías técnicas
+    "DOCUMENTACION.md",
+    "DOCUMENTACION_NUROUM_V403.md",
+    "PLAN_DE_TRABAJO.md"
+]
+
+def make_backup():
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = os.path.join(BACKUPS_DIR, f"backup_{timestamp}")
+    
+    print(f"Iniciando copia de seguridad en:\n  {backup_path}\n")
+    os.makedirs(backup_path, exist_ok=True)
+    
+    copied_count = 0
+    total_bytes = 0
+
+    for rel_path in FILES_TO_BACKUP:
+        src = os.path.join(BASE_DIR, rel_path)
+        dst = os.path.join(backup_path, rel_path)
+        
+        if os.path.exists(src):
+            if os.path.isdir(src):
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+                print(f"  [OK] (Carpeta) Copiado: {rel_path}")
+            else:
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy2(src, dst)
+                size = os.path.getsize(src)
+                total_bytes += size
+                print(f"  [OK] Copiado: {rel_path} ({size:,} bytes)")
+            copied_count += 1
+        else:
+            print(f"  [Omitido] No existe: {rel_path}")
+            
+    mb_total = total_bytes / (1024 * 1024)
+    print(f"\n======================================================")
+    print(f"Copia de seguridad completada con exito.")
+    print(f"Archivos respaldados: {copied_count} elementos (~{mb_total:.2f} MB)")
+    print(f"Destino: {backup_path}")
+    print(f"======================================================")
+
+if __name__ == "__main__":
+    make_backup()

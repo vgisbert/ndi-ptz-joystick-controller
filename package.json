@@ -1,0 +1,17 @@
+{
+  "name": "ndi-ptz-joystick-controller",
+  "version": "1.0.0",
+  "description": "Tactical Broadcast Console for NDI PTZ Cameras (Nuroum V403)",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/cli": "^2.0.0",
+    "vite": "^6.0.0"
+  }
+}
