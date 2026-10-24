@@ -56,19 +56,18 @@ Para mantener el orden cuando los proyectos crezcan y abarquen múltiples tecnol
 ```
 
 ### Modelo B: Aplicaciones Nativas de Alto Rendimiento (Tauri v2 + Rust)
-*Modelo de referencia implementado en este repositorio (`NDI PTZ Joystick Controller`):*
+*Arquitectura recomendada para aplicaciones de escritorio ultraligeras, reactivas y sin dependencias de runtime:*
 ```text
-/NDI_PTZ_Joystick_Controller
+/Nombre_Del_Proyecto
 │
 ├── /src-tauri               # Núcleo de alto rendimiento en Rust (sin dependencias pesadas)
 │   ├── Cargo.toml           # Dependencias y optimización Release (LTO, opt-level="z", strip)
 │   ├── tauri.conf.json      # Ventanas, propiedades y permisos nativos
-│   └── src/                 # Lógica de bajo nivel, sockets UDP/TCP, descubrimiento
+│   └── src/                 # Lógica de bajo nivel, comandos IPC, sockets UDP/TCP
 │
-├── /frontend                # Interfaz de usuario táctica (HTML5, Tailwind, JS reactivo)
-│   ├── index.html           # Hub principal
-│   ├── floating.html        # Ventanas flotantes desacopladas
-│   └── ndi_ptz_client.js    # Conector IPC con Rust
+├── /frontend                # Interfaz de usuario táctica (HTML5, Tailwind/CSS, JS reactivo)
+│   ├── index.html           # Vista principal
+│   └── app.js               # Conector IPC con Rust
 │
 ├── arrancar.bat             # Script de desarrollo con recarga inmediata
 ├── compilar_y_empaquetar.bat# Compilación release portable a 'dist_portable' (~3 MB)

@@ -1,8 +1,6 @@
 # Guía Maestra: Sistema de Compilación Nativo Portable con Tauri v2 y Rust
 
 > **Propósito:** Esta guía proporciona una plantilla universal, paso a paso y comprobada para empaquetar aplicaciones de escritorio nativas en **Windows 10 y 11** utilizando **Tauri v2 + Rust**, logrando ejecutables ultraligeros (**~3 MB**), arranque instantáneo, consumo mínimo de RAM (<25 MB) y **cero dependencia de Python o Node.js** en el equipo de destino.
->
-> 💡 *Nota para este repositorio:* **NDI PTZ Joystick Controller** constituye la implementación de referencia real en producción de esta arquitectura táctica.
 
 ---
 
@@ -39,31 +37,29 @@ Para compilar en cualquier equipo de desarrollo se requieren únicamente dos her
 Cualquier proyecto que utilice este sistema debe estructurarse de la siguiente manera:
 
 ```text
-NDI_PTZ_Joystick_Controller/
+MiProyecto/
 ├── arrancar.bat                   <-- Script de desarrollo y recarga en 1 clic
 ├── compilar_y_empaquetar.bat      <-- Script de compilación release portable automática
 ├── backup.py                      <-- Script de copia de seguridad integral
 ├── dist_portable/                 <-- Carpeta final lista para distribuir / pendrive
-│   ├── NDI-PTZ-Controller.exe     <-- Ejecutable nativo final (~3 MB)
-│   └── WebView2Loader.dll         <-- Conector oficial de Microsoft Edge WebView2
-├── frontend/                      <-- Interfaz de usuario táctica (HTML5, Tailwind, JS)
-│   ├── index.html                 <-- Hub principal / Selector de cámaras
-│   ├── floating.html              <-- Ventana flotante desacoplada de control
-│   ├── settings.html              <-- Panel de ajustes y perfiles
-│   ├── i18n.js                    <-- Motor de traducción multilingüe
-│   └── ndi_ptz_client.js          <-- Conector IPC con Rust
+│   ├── MiApp.exe                  <-- Ejecutable nativo final (~3 MB)
+│   ├── WebView2Loader.dll         <-- Conector oficial de Microsoft Edge WebView2
+│   ├── config.json                <-- Ajustes del usuario (opcional)
+│   └── LEEME_WINDOWS_10.txt       <-- Instrucciones de uso para el usuario final
+├── frontend/                      <-- Interfaz de usuario (HTML5, Tailwind, JS)
+│   ├── index.html                 <-- Vista principal
+│   ├── app.js                     <-- Lógica e interactividad del cliente
+│   └── i18n.js                    <-- Internacionalización (opcional)
 └── src-tauri/                     <-- Motor backend en Rust
-    ├── build.rs                   <-- Script de enlace de recursos Windows
+    ├── build.rs                   <-- Script de enlace de recursos Windows (con parche anti-tildes)
     ├── Cargo.toml                 <-- Configuración de dependencias y optimización LTO
     ├── tauri.conf.json            <-- Propiedades de ventanas, títulos e identificadores
+    ├── icons/                     <-- Iconos (icon.ico, 32x32.png, 128x128.png)
     └── src/
         ├── main.rs                <-- Punto de entrada de Windows (sin consola negra)
         ├── lib.rs                 <-- Registro de comandos y ciclo de vida de Tauri
         ├── commands.rs            <-- Funciones que el frontend invoca por IPC
-        ├── discovery.rs           <-- Demonio de descubrimiento mDNS y sondeo ARP
-        ├── models.rs              <-- Estructuras de datos compartidas (JSON)
-        ├── window_manager.rs      <-- Orquestación de ventanas flotantes
-        └── visca/                 <-- Motor cliente asíncrono VISCA-over-IP (UDP)
+        └── models.rs              <-- Estructuras de datos compartidas (JSON)
 ```
 
 ---
@@ -76,14 +72,13 @@ Este archivo activa la optimización LTO (*Link-Time Optimization*), strip de s�
 
 ```toml
 [package]
-name = "ndi-ptz-joystick-controller"
-version = "0.1.0"
-description = "Tactical Broadcast Console for NDI PTZ Cameras"
-authors = ["Vicente Gisbert"]
+name = "mi-app"
+version = "1.0.0"
+description = "Aplicación Nativa de Alto Rendimiento"
 edition = "2021"
 
 [lib]
-name = "ndi_ptz_lib"
+name = "mi_app_lib"
 crate-type = ["staticlib", "rlib"]
 
 [build-dependencies]
@@ -95,8 +90,6 @@ tauri-plugin-opener = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
-mdns-sd = "0.13"
-grafton-visca = "0.1"
 
 [profile.release]
 panic = "abort"      # Elimina el árbol de desenrollado de excepciones (-1.5 MB)
@@ -115,9 +108,9 @@ Define la ventana principal, dimensiones y la ruta relativa a la carpeta `fronte
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
-  "productName": "NDI PTZ Controller",
-  "version": "0.1.0",
-  "identifier": "com.antigravity.ndi-ptz-controller",
+  "productName": "MiApp",
+  "version": "1.0.0",
+  "identifier": "com.antigravity.miapp",
   "build": {
     "frontendDist": "../frontend"
   },
@@ -125,11 +118,11 @@ Define la ventana principal, dimensiones y la ruta relativa a la carpeta `fronte
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "NDI PTZ Joystick Controller",
+        "title": "Mi Aplicación Nativa",
         "url": "index.html",
         "width": 1050,
         "height": 720,
-        "minWidth": 900,
+        "minWidth": 800,
         "minHeight": 600,
         "resizable": true,
         "decorations": true,
@@ -170,7 +163,7 @@ fn main() {
     let mut windows = tauri_build::WindowsAttributes::new();
     
     // Copiar el icono a una ruta temporal libre de tildes para evitar errores de windres
-    let temp_ico = std::path::PathBuf::from(r"C:\Users\super\.cargo\ndi_ptz_app_icon.ico");
+    let temp_ico = std::path::PathBuf::from(r"C:\Users\super\.cargo\app_icon_temp.ico");
     if std::path::Path::new("icons/icon.ico").exists() {
         let _ = std::fs::copy("icons/icon.ico", &temp_ico);
         windows = windows.window_icon_path(&temp_ico);
@@ -192,32 +185,32 @@ La directiva `#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    ndi_ptz_lib::run();
+    mi_app_lib::run();
 }
 ```
 
 ---
 
-### 4.5. Comunicación Frontend <-> Rust (`frontend/ndi_ptz_client.js`)
+### 4.5. Comunicación Frontend <-> Rust (`frontend/app.js`)
 
-En el frontend no es necesario utilizar frameworks pesados ni empaquetadores como Webpack si no se desean. Se puede usar JavaScript estándar con la API nativa de Tauri:
+En el frontend no es necesario utilizar frameworks pesados ni empaquetadores complejos si no se desean. Se puede usar JavaScript estándar con la API nativa de Tauri:
 
 ```javascript
 // Llamar a una función de Rust por memoria IPC directa
-async function descubrirCamaras() {
+async function obtenerEstado() {
   if (window.__TAURI__ && window.__TAURI__.core) {
     try {
-      // 'discover_cameras' es el comando registrado en Rust con #[tauri::command]
-      const camaras = await window.__TAURI__.core.invoke('discover_cameras');
-      console.log("Cámaras NDI / VISCA detectadas por Rust:", camaras);
-      actualizarSelectorCamaras(camaras);
+      // 'get_status' es el comando registrado en Rust con #[tauri::command]
+      const data = await window.__TAURI__.core.invoke('get_status');
+      console.log("Datos recibidos de Rust:", data);
+      actualizarInterfaz(data);
     } catch (err) {
       console.error("Error al invocar Rust:", err);
     }
   } else {
     // Modo de prueba o mock para desarrollo en navegador
-    console.warn("Entorno Web puro: usando Mock IPC");
-    actualizarSelectorCamaras(obtenerCamarasMock());
+    console.warn("Entorno Web puro: usando Mock");
+    actualizarInterfaz({ nominal: true, items: [] });
   }
 }
 ```
@@ -226,33 +219,35 @@ Y en Rust (`src-tauri/src/commands.rs`):
 
 ```rust
 #[tauri::command]
-pub async fn discover_cameras(
-    discovery: State<'_, Arc<DiscoveryService>>,
-) -> Result<Vec<CameraDevice>, String> {
-    Ok(discovery.get_discovered_cameras().await)
+pub fn get_status() -> Result<MiEstado, String> {
+    Ok(MiEstado {
+        nominal: true,
+        items: vec!["item1".into(), "item2".into()],
+    })
 }
 ```
 
 ---
 
-## 5. El Script de Compilación Portable: `compilar_y_empaquetar.bat`
+## 5. El Script Universal de Compilación: `compilar_y_empaquetar.bat`
 
-El script implementado en este proyecto se encarga de:
+Copia este script en la raíz de cualquier proyecto. Se encarga de:
 1. Localizar y priorizar las herramientas del sistema (Cargo, MinGW/WinLibs).
-2. Mapear una unidad virtual (`N:`) para aislar el compilador de espacios y caracteres especiales en las rutas.
+2. Mapear una unidad virtual (`M:`) para aislar el compilador de espacios y caracteres especiales en las rutas.
 3. Compilar en modo Release con optimizaciones LTO agresivas.
-4. Generar la carpeta portable `dist_portable` con el binario (`NDI-PTZ-Controller.exe`) y `WebView2Loader.dll` listo para llevar en pendrive o desplegar en cabina broadcast.
+4. Generar la carpeta portable `dist_portable` con el binario (`MiApp.exe`), librerías auxiliares (`WebView2Loader.dll`) y empaquetar un archivo `.zip` listo para pendrive.
 
 ```bat
 @echo off
-title NDI PTZ Joystick Controller - Compilador Portable Release
+title Compilador Nativo Tauri v2 Portable (Sin Dependencias)
 echo ======================================================
-echo    Compilando Release Portable para Windows 10
+echo    Compilando Release Nativo para Windows 10 / 11
 echo ======================================================
 echo.
 
-set CARGO_PATH=%USERPROFILE%\.cargo\bin
-set WINGET_MINGW=%LOCALAPPDATA%\Microsoft\WinGet\Packages\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\mingw64\bin
+:: 1. Localizar herramientas en el sistema
+set "CARGO_PATH=%USERPROFILE%\.cargo\bin"
+set "WINGET_MINGW=%LOCALAPPDATA%\Microsoft\WinGet\Packages\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\mingw64\bin"
 
 if exist "%WINGET_MINGW%" (
     set "PATH=%WINGET_MINGW%;%PATH%"
@@ -268,46 +263,64 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Mapear unidad virtual N: para garantizar rutas sin espacios
-subst N: /d >nul 2>&1
-subst N: "%~dp0." >nul 2>&1
+:: 2. Directorio de compilación fuera de rutas con caracteres no-ASCII
+set "CARGO_TARGET_DIR=C:\Users\super\.cargo\target_build_temp"
 
-if exist "N:\src-tauri" (
-    cd /d "N:\src-tauri"
-) else (
-    cd /d "%~dp0src-tauri"
-)
+:: 3. Mapear unidad virtual temporal M: (Inmunidad contra espacios y tildes)
+subst M: /d >nul 2>&1
+subst M: "%~dp0." >nul 2>&1
 
-echo [1/2] Compilando binario optimizado (Release)...
+cd /d "M:\src-tauri"
+echo [1/3] Compilando binario optimizado con Cargo (Release)...
 set RUSTFLAGS=-A linker-messages
 cargo build --release
 
 if errorlevel 1 (
-    echo [ERROR] Error durante la compilacion.
+    echo [ERROR] Fallo la compilacion de Rust.
     cd /d "%~dp0"
-    subst N: /d >nul 2>&1
+    subst M: /d >nul 2>&1
     pause
     exit /b 1
 )
 
 cd /d "%~dp0"
-subst N: /d >nul 2>&1
+subst M: /d >nul 2>&1
 
 echo.
-echo [2/2] Empaquetando en la carpeta 'dist_portable'...
+echo [2/3] Creando carpeta de distribucion portable 'dist_portable'...
 if not exist "dist_portable" mkdir "dist_portable"
 
-copy /Y "src-tauri\target\release\ndi-ptz-joystick-controller.exe" "dist_portable\NDI-PTZ-Controller.exe" >nul
-copy /Y "src-tauri\target\release\WebView2Loader.dll" "dist_portable\WebView2Loader.dll" >nul
+:: 4. Copiar archivos necesarios
+copy /Y "C:\Users\super\.cargo\target_build_temp\release\mi-app.exe" "dist_portable\MiApp.exe" >nul
+copy /Y "C:\Users\super\.cargo\target_build_temp\release\WebView2Loader.dll" "dist_portable\WebView2Loader.dll" >nul 2>&1
+if exist "config.json" copy /Y "config.json" "dist_portable\config.json" >nul
+
+:: 5. Generar archivo de instrucciones para el usuario final
+(
+echo =============================================================================
+echo                       INSTRUCCIONES DE USO PORTABLE
+echo =============================================================================
+echo.
+echo Para ejecutar en cualquier ordenador Windows 10 o Windows 11:
+echo   1. Copia esta carpeta en el ordenador destino (o ejecutala desde un pendrive).
+echo   2. Haz doble clic en "MiApp.exe".
+echo.
+echo NOTA: No requiere instalar Python, Node.js ni configurar variables de entorno.
+echo =============================================================================
+) > "dist_portable\LEEME_WINDOWS_10.txt"
+
+echo.
+echo [3/3] Comprimiendo paquete ZIP para distribucion...
+powershell -NoProfile -Command "Compress-Archive -Path 'dist_portable\*' -DestinationPath 'dist_portable\Mi_App_Portable.zip' -Force" >nul 2>&1
 
 echo.
 echo ======================================================
-echo  [LISTO] Paquete portable generado con exito en:
+echo  [LISTO] Paquete portable generado con exito:
 echo         %~dp0dist_portable\
-echo ======================================================
 echo.
-echo Para probar en otro PC Windows 10, simplemente copia
-echo la carpeta 'dist_portable' completa (o un pendrive).
+echo  Archivo ZIP listo para compartir:
+echo         %~dp0dist_portable\Mi_App_Portable.zip
+echo ======================================================
 echo.
 pause
 ```

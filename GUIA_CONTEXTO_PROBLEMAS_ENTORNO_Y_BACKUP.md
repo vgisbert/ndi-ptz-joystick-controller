@@ -1,13 +1,12 @@
 # Guía de Contexto Técnico: Diagnóstico y Resolución de Entornos Virtuales y Respaldos en Proyectos Híbridos (Windows / Python + Node.js)
 
 > **Propósito de este documento:**  
-> Servir como referencia técnica reutilizable e inyectable en hilos de conversación, documentación de repositorios o prompts para agentes de IA en proyectos con arquitectura similar (FastAPI / Python + Electron / Frontend sobre Windows).
+> Servir como referencia técnica reutilizable e inyectable en hilos de conversación, documentación de repositorios o prompts para agentes de IA en proyectos con arquitectura similar (FastAPI / Python + Electron / Tauri / Frontend sobre Windows).
 >
-> 💡 **Nota de contexto para este repositorio (`NDI PTZ Joystick Controller`):**  
-> Este proyecto implementa su motor de control 100% en **Rust y Tauri v2**, evitando por diseño la fragilidad de runtimes y entornos virtuales de Python para la lógica de broadcast de baja latencia.  
-> No obstante, este documento se mantiene y adopta formalmente aquí por dos motivos:  
-> 1. **Fundamentación de `backup.py`:** Las secciones 2 y 3.2 explican y definen la arquitectura del script de resguardo `backup.py` operativo en este proyecto.  
-> 2. **Base de conocimiento Antigravity:** Diagnóstico de cabecera para dependencias, enlaces simbólicos, codificación batch y preservación de entornos en el ecosistema Windows.
+> 💡 **Nota de aplicación:**  
+> En proyectos que implementan motores nativos en **Rust y Tauri v2**, se evita por diseño la fragilidad de runtimes y entornos virtuales de Python para la lógica de bajo nivel. No obstante, este documento se adopta transversalmente en el ecosistema Antigravity por dos motivos clave:  
+> 1. **Fundamentación de `backup.py`:** Las secciones 2 y 3.2 explican y definen la arquitectura universal del script de resguardo `backup.py`.  
+> 2. **Base de conocimiento Windows:** Diagnóstico de cabecera para dependencias, enlaces simbólicos, codificación batch y preservación de entornos.
 
 ---
 
@@ -272,9 +271,9 @@ exit /b 1
 
 ---
 
-### 3.2. Implementación de `backup.py` en este Proyecto (NDI PTZ Joystick Controller)
+### 3.2. Plantilla `backup.py` Robusta y Extensible
 
-El archivo `backup.py` en la raíz de este repositorio implementa esta arquitectura, asegurando tanto los fuentes web, el core de Rust, los scripts de empaquetado y toda la base documental técnica:
+Copia este script en la raíz de cualquier proyecto para disponer de un sistema de copias de seguridad instantáneas, versionadas por fecha y hora, y completamente trazables (adaptando `FILES_TO_BACKUP` a la estructura del proyecto):
 
 ```python
 import os
@@ -289,27 +288,24 @@ BACKUPS_DIR = os.path.join(BASE_DIR, "backups")
 FILES_TO_BACKUP = [
     # Configuración raíz y control de versiones
     ".gitignore",
-    "package.json",
+    "config.json",
     "LICENSE",
     "README.md",
     
     # Frontend y recursos de interfaz
     "frontend",
     
-    # Rust Core (src-tauri)
-    "src-tauri/Cargo.toml",
-    "src-tauri/tauri.conf.json",
-    "src-tauri/build.rs",
-    "src-tauri/src",
+    # Backend / Motor nativo (según arquitectura: backend/ o src-tauri/)
+    "backend",
+    "src-tauri",
     
     # Lanzadores y mantenimiento
     "arrancar.bat",
     "compilar_y_empaquetar.bat",
     "backup.py",
     
-    # Documentación, auditorías técnicas y guías maestras
+    # Documentación técnica, guías y especificaciones
     "DOCUMENTACION.md",
-    "DOCUMENTACION_NUROUM_V403.md",
     "PLAN_DE_TRABAJO.md",
     "GUIA_COMPILACION_NATIVA_TAURI_RUST.md",
     "GUIA_CONTEXTO_PROBLEMAS_ENTORNO_Y_BACKUP.md",
