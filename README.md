@@ -80,7 +80,6 @@ Durante el desarrollo del proyecto se realizó una auditoría completa del firmw
 │   └── tests/
 │       └── visca_protocol.rs     # Suite de pruebas unitarias del protocolo
 │
-├── STITCH/                       # Especificaciones originales de diseño UI
 ├── arrancar.bat                  # Script lanzador en modo desarrollo
 ├── compilar_y_empaquetar.bat     # Generador del paquete binario portable Release
 ├── DOCUMENTACION.md              # Documentación técnica de arquitectura

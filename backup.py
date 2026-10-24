@@ -19,9 +19,6 @@ FILES_TO_BACKUP = [
     "src-tauri/capabilities",
     "src-tauri/src",
     
-    # Diseños y plantillas base
-    "STITCH",
-    
     # Lanzadores y mantenimiento
     "arrancar.bat",
     "backup.py",
