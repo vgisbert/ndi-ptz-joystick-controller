@@ -14,7 +14,7 @@ flowchart TD
     Fase1["Fase 1: Preparación del Entorno & Toolchain<br>• Instalación de Rust (rustup)<br>• Inicialización de proyecto Tauri 2.0<br>• Estructura de carpetas"]
     Fase2["Fase 2: Motor de Red & Protocolo VISCA (Rust)<br>• Cliente UDP asíncrono<br>• Parser de comandos VISCA Nuroum V403<br>• Demonio de descubrimiento mDNS (5353)"]
     Fase3["Fase 3: Sistema de Ventanas Flotantes (Tauri IPC)<br>• Gestor multiventana (WebviewWindow)<br>• Ventana ancla/hub + ventanas flotantes por cámara<br>• Control Always-on-Top y memoria de posición"]
-    Fase4["Fase 4: Integración UI Tactical Broadcast<br>• Adaptación de plantillas STITCH<br>• Cardán/Joystick virtual con zona muerta y Creep 25%<br>• Bancada de Presets (GOTO y MEM con timer de 1s)"]
+    Fase4["Fase 4: Integración UI Tactical Broadcast<br>• Adaptación de plantillas STITCH<br>• Cardán/Joystick virtual con zona muerta y Creep 25%<br>• Bancada de Presets unificada (GOTO y MEM con hold de 2s)"]
     Fase5["Fase 5: Panel de Ajustes, NVRAM y Perfiles<br>• Vista de configuración y telemetría a 100Hz<br>• Exportación/Importación de perfiles JSON<br>• Persistencia local portable (sin AppData)"]
     Fase6["Fase 6: Calibración con Nuroum V403 & Empaquetado<br>• Pruebas con las 2 unidades Nuroum V403<br>• Compilación Release Single-File (.exe portable)<br>• Scripts de arranque y backup"]
 
@@ -74,8 +74,7 @@ flowchart TD
   - Tecla de acceso rápido `ESPACIO` para centrado automático inmediato.
   - Selector de velocidad con deslizador continuo y **Modo Creep 25%** para tomas cinematográficas lentas.
 - [ ] **Bancada de Macros y Presets:**
-  - Cuadrícula de 8 botones GOTO con respuesta táctil visual (ámbar activo).
-  - Fila de 8 botones MEM con protección por pulsación sostenida (1 segundo con animación circular de progreso) antes de confirmar el guardado.
+  - Cuadrícula unificada de 8 botones GOTO/MEM con respuesta táctil visual (ámbar activo en selección, pulsación sostenida de 2 segundos para memorizar con confirmación en cian).
 - [ ] **Pantalla OLED de Telemetría:**
   - Renderizado en alta frecuencia de valores tabulares: Pan ($^\circ$), Tilt ($^\circ$), Zoom ($\times$), Estado de AF y Latencia ($ms$).
 
@@ -84,6 +83,7 @@ flowchart TD
   - Renombrado de cámara (ej. `CAM-01 Nuroum Escenario`, `CAM-02 Nuroum Público`).
   - Asignación de nombres personalizados a cada uno de los 8 presets (ej. `Batería`, `Voz Ppal`).
   - Botón de sincronización con la NVRAM de la cámara Nuroum V403.
+  - Botón táctico de **Re-calibración de Enfoque [ENFOQUE]** y auto-saneamiento silencioso de AutoFocus por red (vía HTTP RPC 8090).
 - [ ] **Sistema de Perfiles JSON:**
   - Exportación e importación de archivos de perfil de escena (`.json`).
   - Modo portable: Almacenamiento directo en el directorio del ejecutable si existe `portable.flag`.

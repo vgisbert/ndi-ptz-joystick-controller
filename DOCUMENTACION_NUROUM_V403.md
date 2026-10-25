@@ -99,6 +99,33 @@ Cualquier otro comando VISCA estándar es descartado en la rama `Unknow ptz cont
 * **Exposición / Brillo / Contraste (`81 01 04 39 ...` / `4E ...`):** Ignorado por UDP 1259.
 * **Enfoque (`81 01 04 38 ...` / `08 ...`):** Aunque `libCommProtocol` parsea el comando (`remoteCommandFocus`), `Media_V403` no registra el callback serie de enfoque en `MEDIA_SerialProtocolInit`.
 
+### 3.5. Dependencia de Flujo de Vídeo Activo (Modo Privacidad y Corte de Servomotores en Standby)
+
+Durante los diagnósticos de hardware se constató una particularidad crítica de diseño que condiciona el movimiento físico del gimbal:
+
+1. **Directiva de Privacidad en Flash (`/mnt/mtd/Config/config.ini`):**
+   El firmware de fábrica mantiene activada la directiva:
+   ```ini
+   [privacy]
+   enable = 1
+   ```
+2. **Corte de potencia de los drivers paso a paso (*Stepper Drivers*):**
+   Cuando **ningún receptor está consumiendo activamente el flujo de vídeo** de la cámara (por ejemplo, si OBS Studio, vMix o NDI Studio Monitor están cerrados y no hay conexiones RTSP ni UVC activas):
+   * El procesador de señal de imagen (ISP) entra en estado de reposo para ahorrar energía y disipar calor.
+   * El controlador de hardware **desactiva la etapa de potencia de los servomotores**, bloqueando el movimiento mecánico del cabezal.
+3. **Comportamiento engañoso del socket de red UDP 1259:**
+   * El demonio principal `/var/hunter` **sigue 100 % vivo en la red** y procesa cualquier comando VISCA entrante (Pan, Tilt, Zoom, Home o Presets).
+   * La cámara responde siempre con tramas afirmativas de ACK (`90 41 FF`) y Completion (`90 51 FF`).
+   * Sin embargo, **el gimbal no se moverá físicamente** mientras el subsistema de captura e imagen permanezca inactivo.
+4. **Activación automática al transmitir vídeo (*Wake on Stream*):**
+   * En el instante en que una aplicación receptora (OBS Studio, NDI Studio Monitor, vMix o reproductor RTSP) abre el flujo de vídeo, la cámara despierta, energiza de inmediato los motores paso a paso y el joystick y presets responden con absoluta fluidez.
+
+#### 3.5.1. Prueba Experimental de Despertar Proactivo (Enganche NDI / Descartado)
+
+Se evaluó la posibilidad de simular un enganche de consumo de vídeo (`TCP 5961`) desde el backend de control antes de cada movimiento para escenarios donde el joystick reside en un PC distinto al que recibe la imagen de OBS.
+* **Resultado de las pruebas de campo:** El mecanismo fue **descartado**. Abrir y cerrar conexiones NDI intermitentes colisiona con los temporizadores internos de la máquina de estados de `/var/hunter` y produce respuestas erráticas en los motores.
+* **Solución arquitectónica estándar:** Mantener la sesión de streaming NDI activa de forma continuada en el receptor (OBS, vMix o NDI Studio Monitor), lo que mantiene la etapa de potencia de los motores energizada de forma natural y estable.
+
 ---
 
 ## 4. API HTTP JSON-RPC Oculta en el Puerto `TCP 8090`
@@ -182,6 +209,18 @@ El análisis de llamadas a `HttpRegistProt` dentro de `/var/hunter` muestra 9 cl
   "Param": { "SpeedMode": "Fast" }
 }
 ```
+
+#### 4.2.1. Implementación de Auto-Recuperación y Calibración de Enfoque en el Controlador
+
+Dado que la cámara carece de controles analógicos de enfoque en su mando infrarrojo físico y que VISCA serie no expone el callback de enfoque en la V403, este controlador aprovecha la API HTTP en el puerto `8090` para ofrecer dos niveles de protección de nitidez:
+
+1. **Auto-Saneamiento Silencioso en el Arranque / Descubrimiento (`discovery.rs`):**
+   * Cada vez que una cámara es descubierta o recupera conectividad, el backend en Rust dispara en segundo plano `http_set_focus_auto(&ip)` para garantizar que el parámetro interno `Focus.Mode` esté fijado en `"Auto"`. Esto evita que la cámara quede desenfocada de forma permanente tras cortes de red o reinicios.
+2. **Botón Táctico de Re-calibración de Enfoque en Ajustes (`settings.html`):**
+   * En la vista de configuración se ha integrado el botón `[ENFOQUE]` que invoca el comando Tauri `ptz_recalibrate_focus(camera_id)`:
+     1. Reasegura el modo `"Auto"` por HTTP JSON-RPC.
+     2. Dispara un ciclo óptico de micro-zoom VISCA (Tele 350 ms $\rightarrow$ Wide 350 ms $\rightarrow$ Stop).
+     3. El desplazamiento mecánico de los elementos ópticos fuerza al procesador Rockchip a activar su bucle de contraste de alta frecuencia, clavando la nitidez de la escena en menos de 1 segundo sin requerir la aplicación NearSync ni cableado USB.
 
 ---
 

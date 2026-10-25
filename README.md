@@ -29,7 +29,7 @@ El sistema fue concebido para resolver las particularidades de red y control cin
   * Algoritmo de **Selección de Eje Predominante (*Dominant Axis Selection*)** para resolver limitaciones de hardware en diagonales.
 * **Bancada de Presets Rápidos:**
   * 8 ranuras de memoria directa por cámara.
-  * Modos duales: llamada directa (**GOTO**) y guardado seguro con temporizador de protección (**MEM** con cuenta regresiva visual de 1 segundo).
+  * Modos duales unificados en el propio botón de selección: llamada directa instantánea (**GOTO**) y guardado seguro manteniendo pulsado 2 segundos (**MEM** con confirmación visual táctica).
 * **Motor de Red en Rust:**
   * Demonio de autodescubrimiento mDNS / DNS-SD en puerto `UDP 5353` (`mdns-sd`).
   * Mecanismo de contingencia por tabla ARP enfocado en el OUI del fabricante (`98:6E:E8`).
@@ -49,6 +49,8 @@ Durante el desarrollo del proyecto se realizó una auditoría completa del firmw
    Las consultas cíclicas de coordenadas (`81 09 06 12 FF`) saturan la cola del microcontrolador interno de la cámara, provocando eventos de retorno no deseado al origen (**HOME**). El motor de este proyecto omite el polling destructivo y utiliza un enfoque pasivo/reactivo.
 3. **Colisión de Nombres en Flujos NDI:**
    El firmware de fábrica de la cámara anuncia un descriptor duplicado `LOCALHOST (Nuroum Cam V403-)` en todas las unidades. La aplicación diferencia inequívocamente cada cámara mediante su IP y dirección MAC física.
+4. **Dependencia de Vídeo Activo para Control Mecánico (Modo Privacidad en Reposo):**
+   La cámara incorpora por hardware un modo de ahorro y privacidad (`[privacy] enable = 1` en `config.ini`). Si ninguna aplicación (OBS Studio, NDI Studio Monitor o RTSP) está recibiendo el flujo de imagen de la cámara, los controladores de potencia de los motores paso a paso se desenergizan para evitar sobrecalentamiento. Durante este estado, el firmware sigue respondiendo afirmativamente por red (ACKs VISCA), pero el gimbal permanece mecánicamente bloqueado hasta que se abre el flujo de vídeo (*Wake on Stream*).
 
 > 📖 **Para un análisis técnico en profundidad y guías operativas:**
 > * [`DOCUMENTACION.md`](DOCUMENTACION.md): Arquitectura de red, comunicación VISCA-over-IP y multiventana.

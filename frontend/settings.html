@@ -78,12 +78,20 @@
           <input id="cfg-cam-name" type="text" value="CÁM 1" maxlength="8" class="w-[9.5ch] px-1.5 py-0.5 rounded bg-surface-lowest border border-border-tac/50 text-txt-main text-[10px] text-center focus:outline-none focus:border-cyan-tac">
         </div>
 
-        <!-- Botón IP (abre panel con última IP para OBS, MAC, estado ON/OFFLINE y BÚSQUEDA en red) -->
-        <button id="btn-open-ip-modal" class="px-2.5 py-1 rounded bg-surface-high hover:bg-surface-highest text-cyan-tac font-bold text-[10px] border border-cyan-tac/40 flex items-center gap-1.5 shadow-[0_0_6px_rgba(0,240,255,0.15)] active:scale-95 transition-all" data-i18n-title="btn_ip_title" title="Ver IP para OBS, estado ON/OFFLINE y buscar cámaras en la red">
-          <span id="btn-ip-dot" class="w-2 h-2 rounded-full bg-cyan-tac shadow-[0_0_5px_#00f0ff]"></span>
-          <span>IP</span>
-          <span id="btn-ip-preview" class="text-[9px] text-txt-main font-normal">---.---.---.---</span>
-        </button>
+        <div class="flex items-center gap-1.5">
+          <!-- Botón Re-enfocar Rápido -->
+          <button id="btn-refocus-cam" class="px-2 py-1 rounded bg-surface-high hover:bg-surface-highest text-amber-tac font-bold text-[10px] border border-amber-tac/40 flex items-center gap-1 shadow-[0_0_6px_rgba(254,179,0,0.15)] active:scale-95 transition-all" data-i18n-title="btn_refocus_title" title="Restablecer Autoenfoque y recalibrar nitidez de la lente">
+            <span class="material-symbols-outlined text-[13px]">center_focus_strong</span>
+            <span id="btn-refocus-text" data-i18n="btn_refocus">ENFOQUE</span>
+          </button>
+
+          <!-- Botón IP (abre panel con última IP para OBS, MAC, estado ON/OFFLINE y BÚSQUEDA en red) -->
+          <button id="btn-open-ip-modal" class="px-2.5 py-1 rounded bg-surface-high hover:bg-surface-highest text-cyan-tac font-bold text-[10px] border border-cyan-tac/40 flex items-center gap-1.5 shadow-[0_0_6px_rgba(0,240,255,0.15)] active:scale-95 transition-all" data-i18n-title="btn_ip_title" title="Ver IP para OBS, estado ON/OFFLINE y buscar cámaras en la red">
+            <span id="btn-ip-dot" class="w-2 h-2 rounded-full bg-cyan-tac shadow-[0_0_5px_#00f0ff]"></span>
+            <span>IP</span>
+            <span id="btn-ip-preview" class="text-[9px] text-txt-main font-normal">---.---.---.---</span>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -505,6 +513,33 @@
           await window.NDIPtz.preset(activeCameraId, 'recall', num);
         });
       });
+
+      // Botón táctico de Re-enfoque y Calibración
+      const btnRefocusCam = document.getElementById('btn-refocus-cam');
+      const btnRefocusText = document.getElementById('btn-refocus-text');
+
+      if (btnRefocusCam) {
+        btnRefocusCam.addEventListener('click', async () => {
+          if (!activeCameraId) return;
+          btnRefocusCam.disabled = true;
+          btnRefocusText.textContent = window.I18n.t('refocusing');
+          btnRefocusCam.className = 'px-2 py-1 rounded bg-surface-high text-amber-tac font-bold text-[10px] border border-amber-tac flex items-center gap-1 animate-pulse transition-all';
+
+          try {
+            await window.NDIPtz.recalibrateFocus(activeCameraId);
+            btnRefocusText.textContent = window.I18n.t('refocus_success');
+            btnRefocusCam.className = 'px-2 py-1 rounded bg-cyan-tac text-surface-lowest font-bold text-[10px] border border-cyan-tac flex items-center gap-1 shadow-[0_0_8px_rgba(0,240,255,0.5)] transition-all';
+          } catch (e) {
+            btnRefocusText.textContent = 'ERR';
+          } finally {
+            setTimeout(() => {
+              btnRefocusText.textContent = window.I18n.t('btn_refocus');
+              btnRefocusCam.className = 'px-2 py-1 rounded bg-surface-high hover:bg-surface-highest text-amber-tac font-bold text-[10px] border border-amber-tac/40 flex items-center gap-1 shadow-[0_0_6px_rgba(254,179,0,0.15)] active:scale-95 transition-all';
+              btnRefocusCam.disabled = false;
+            }, 1500);
+          }
+        });
+      }
 
       document.getElementById('btn-export-json').addEventListener('click', () => {
         saveCurrentForm();

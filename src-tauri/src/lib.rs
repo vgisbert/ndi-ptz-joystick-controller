@@ -72,6 +72,7 @@ pub fn run() {
             commands::ptz_home,
             commands::ptz_zoom,
             commands::ptz_focus,
+            commands::ptz_recalibrate_focus,
             commands::ptz_preset,
             commands::ptz_inquiry_telemetry,
             commands::ptz_ping,

@@ -34,6 +34,8 @@ El despliegue inicial y calibración se realiza con **2 unidades Nuroum V403 PTZ
 - **Bancos de Memoria (Presets):**
   - Mínimo 8 presets directos por cámara accesibles mediante macros (GOTO 01 a 08).
   - Almacenamiento directo en la memoria NVRAM de la propia cámara Nuroum V403.
+- **Requisito Operativo Fundamental (Wake on Stream):**
+  - La etapa de potencia de los motores paso a paso de la cámara solo se energiza cuando existe un receptor activo consumiendo vídeo (OBS Studio vía NDI, NDI Studio Monitor, vMix o RTSP). Si no hay recepción de vídeo activa, la cámara entra en modo de reposo/privacidad (`[privacy] enable = 1`) y no moverá físicamente los ejes aunque el demonio de red responda con `ACK` a los comandos VISCA.
 
 ---
 

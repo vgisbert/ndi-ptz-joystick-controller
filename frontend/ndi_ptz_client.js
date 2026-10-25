@@ -95,6 +95,14 @@
             console.log('[NDI Mock] ptz_focus:', cameraId, action, speed);
         },
 
+        async recalibrateFocus(cameraId) {
+            if (isTauri) {
+                return await window.__TAURI__.core.invoke('ptz_recalibrate_focus', { cameraId });
+            }
+            console.log('[NDI Mock] ptz_recalibrate_focus:', cameraId);
+            return true;
+        },
+
         async preset(cameraId, action, presetNum) {
             // action: 'recall' | 'store' | 'clear'
             if (isTauri) {

@@ -372,6 +372,31 @@ pub async fn ptz_focus(
 }
 
 #[tauri::command]
+pub async fn ptz_recalibrate_focus(
+    state: State<'_, AppState>,
+    camera_id: String,
+) -> Result<bool, String> {
+    let cam = state
+        .registry
+        .get(&camera_id)
+        .ok_or_else(|| format!("Camera ID '{}' not found in registry", camera_id))?;
+
+    // 1. Restaurar Focus Mode: Auto vía HTTP RPC en puerto 8090
+    let _ = crate::discovery::http_set_focus_auto(&cam.ip).await;
+
+    // 2. Si la cámara está disponible, forzar ciclo de nitidez con micro-zoom
+    if let Ok(client) = resolve_client(&state, &camera_id).await {
+        let _ = client.send_zoom(ZoomAction::Tele, Some(3)).await;
+        tokio::time::sleep(Duration::from_millis(350)).await;
+        let _ = client.send_zoom(ZoomAction::Wide, Some(3)).await;
+        tokio::time::sleep(Duration::from_millis(350)).await;
+        let _ = client.send_zoom(ZoomAction::Stop, None).await;
+    }
+
+    Ok(true)
+}
+
+#[tauri::command]
 pub async fn ptz_preset(
     state: State<'_, AppState>,
     camera_id: String,

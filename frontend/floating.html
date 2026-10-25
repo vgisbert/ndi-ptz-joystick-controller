@@ -166,7 +166,7 @@
     <section class="flex flex-col gap-1.5 bg-surface-container p-2.5 rounded-xl border border-outline-variant/30">
       <div class="flex items-center justify-between">
         <span class="font-label-sm text-[10px] text-secondary uppercase font-bold tracking-wider" data-i18n="presets_goto_floating">Ir a Preset (GOTO)</span>
-        <span class="font-label-sm text-[9px] text-outline" data-i18n="presets_instant_press">PULSACIÓN INSTANTÁNEA</span>
+        <span class="font-label-sm text-[9px] text-outline" data-i18n="mem_nvram_help">Guardar: Mantener 2s</span>
       </div>
 
       <div id="floating-presets-grid" class="grid grid-cols-4 gap-1.5">
@@ -202,21 +202,6 @@
           <span class="text-[8px] opacity-70">P8</span>
           <span class="preset-name">TELÓN</span>
         </button>
-      </div>
-
-      <!-- Fila de Guardado con Protección (MEM 1-8) -->
-      <div class="flex items-center justify-between pt-1 border-t border-outline-variant/20">
-        <span class="font-label-sm text-[9px] text-outline uppercase font-semibold" data-i18n="mem_nvram_help">Guardar en NVRAM (Mantener 1s)</span>
-      </div>
-      <div class="grid grid-cols-8 gap-1">
-        <button data-mem="1" class="btn-mem py-1 rounded bg-surface-container-lowest hover:bg-error-container text-outline hover:text-white font-label-sm text-[9px] font-bold transition-all">M1</button>
-        <button data-mem="2" class="btn-mem py-1 rounded bg-surface-container-lowest hover:bg-error-container text-outline hover:text-white font-label-sm text-[9px] font-bold transition-all">M2</button>
-        <button data-mem="3" class="btn-mem py-1 rounded bg-surface-container-lowest hover:bg-error-container text-outline hover:text-white font-label-sm text-[9px] font-bold transition-all">M3</button>
-        <button data-mem="4" class="btn-mem py-1 rounded bg-surface-container-lowest hover:bg-error-container text-outline hover:text-white font-label-sm text-[9px] font-bold transition-all">M4</button>
-        <button data-mem="5" class="btn-mem py-1 rounded bg-surface-container-lowest hover:bg-error-container text-outline hover:text-white font-label-sm text-[9px] font-bold transition-all">M5</button>
-        <button data-mem="6" class="btn-mem py-1 rounded bg-surface-container-lowest hover:bg-error-container text-outline hover:text-white font-label-sm text-[9px] font-bold transition-all">M6</button>
-        <button data-mem="7" class="btn-mem py-1 rounded bg-surface-container-lowest hover:bg-error-container text-outline hover:text-white font-label-sm text-[9px] font-bold transition-all">M7</button>
-        <button data-mem="8" class="btn-mem py-1 rounded bg-surface-container-lowest hover:bg-error-container text-outline hover:text-white font-label-sm text-[9px] font-bold transition-all">M8</button>
       </div>
     </section>
 
@@ -386,41 +371,62 @@
     btnZoomWide.addEventListener('pointerup', () => window.NDIPtz.zoom(cameraId, 'stop'));
     btnZoomWide.addEventListener('pointercancel', () => window.NDIPtz.zoom(cameraId, 'stop'));
 
-    // Presets GOTO
+    // Presets GOTO: Pulsación normal = IR A PRESET | Mantener 2 segundos = MEMORIZAR
     document.querySelectorAll('.btn-goto').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const num = parseInt(btn.getAttribute('data-goto'));
-        dispPresetActive.textContent = `PRESET #${num.toString().padStart(2, '0')}`;
-        await window.NDIPtz.preset(cameraId, 'recall', num);
-      });
-    });
+      let holdTimer = null;
+      let visualTimer = null;
+      let isLongPress = false;
+      const num = parseInt(btn.getAttribute('data-goto'), 10);
 
-    // Presets MEM con pulsación sostenida (1 segundo)
-    document.querySelectorAll('.btn-mem').forEach(btn => {
-      let timer = null;
-      const num = parseInt(btn.getAttribute('data-mem'));
+      const cancelHold = () => {
+        if (visualTimer) { clearTimeout(visualTimer); visualTimer = null; }
+        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        btn.classList.remove('bg-error-container', 'text-white', 'animate-pulse');
+      };
 
-      btn.addEventListener('pointerdown', () => {
-        btn.classList.add('bg-error-container', 'text-white', 'animate-pulse');
-        timer = setTimeout(async () => {
+      btn.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        isLongPress = false;
+
+        visualTimer = setTimeout(() => {
+          btn.classList.add('bg-error-container', 'text-white', 'animate-pulse');
+        }, 180);
+
+        holdTimer = setTimeout(async () => {
+          holdTimer = null;
+          isLongPress = true;
+          if (visualTimer) clearTimeout(visualTimer);
+
           await window.NDIPtz.preset(cameraId, 'store', num);
-          btn.classList.remove('animate-pulse');
+          btn.classList.remove('animate-pulse', 'bg-error-container');
           btn.classList.add('bg-primary-container', 'text-on-primary-container');
           dispPresetActive.textContent = window.I18n.t('mem_saved_badge', { n: num });
+
           setTimeout(() => {
             btn.classList.remove('bg-primary-container', 'text-on-primary-container');
           }, 1500);
-        }, 1000);
+        }, 2000);
       });
 
-      const clearMem = () => {
-        if (timer) clearTimeout(timer);
-        btn.classList.remove('animate-pulse', 'bg-error-container', 'text-white');
-      };
+      btn.addEventListener('pointerup', async () => {
+        if (visualTimer) { clearTimeout(visualTimer); visualTimer = null; }
+        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        if (!isLongPress) {
+          dispPresetActive.textContent = `PRESET #${num.toString().padStart(2, '0')}`;
+          await window.NDIPtz.preset(cameraId, 'recall', num);
+        }
+      });
 
-      btn.addEventListener('pointerup', clearMem);
-      btn.addEventListener('pointercancel', clearMem);
-      btn.addEventListener('pointerleave', clearMem);
+      btn.addEventListener('pointerleave', cancelHold);
+      btn.addEventListener('pointercancel', cancelHold);
+
+      btn.addEventListener('click', (e) => {
+        if (isLongPress) {
+          e.preventDefault();
+          e.stopPropagation();
+          isLongPress = false;
+        }
+      });
     });
 
     // Reaccionar a cambios de idioma

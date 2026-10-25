@@ -6,7 +6,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use mdns_sd::{ServiceDaemon, ServiceEvent};
 use tauri::{AppHandle, Emitter};
-use tokio::net::UdpSocket;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpStream, UdpSocket};
 use tokio::task::JoinSet;
 
 use crate::models::CameraInfo;
@@ -89,6 +90,37 @@ pub async fn probe_single_camera_ip(ip: Ipv4Addr, port: u16, timeout_ms: u64) ->
         }
         _ => None,
     }
+}
+
+/// Silently ensures camera is in Focus Mode: Auto via HTTP RPC (port 8090)
+pub async fn http_set_focus_auto(ip: &str) -> Result<(), String> {
+    let clean_ip = ip.trim();
+    if clean_ip.is_empty() || clean_ip.starts_with("0.") || clean_ip.starts_with("127.") {
+        return Ok(());
+    }
+    let target = format!("{}:8090", clean_ip);
+    let mut stream = match tokio::time::timeout(
+        Duration::from_millis(800),
+        TcpStream::connect(&target),
+    )
+    .await {
+        Ok(Ok(s)) => s,
+        _ => return Err(format!("No se pudo conectar a {}", target)),
+    };
+
+    let body = r#"{"Seq":1,"Class":"Focus","Method":"SetMode","Param":{"Mode":"Auto"}}"#;
+    let request = format!(
+        "POST /index/api/remote HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+        target,
+        body.len(),
+        body
+    );
+
+    let _ = stream.write_all(request.as_bytes()).await;
+    let mut buf = [0u8; 256];
+    let _ = tokio::time::timeout(Duration::from_millis(400), stream.read(&mut buf)).await;
+    println!("[AUTO-FOCUS] Modo Auto reasegurado por HTTP en {}", target);
+    Ok(())
 }
 
 /// Reads current IPv4 hosts from the Windows ARP table without opening a console window
@@ -216,7 +248,7 @@ impl CameraRegistry {
                 id: id.clone(),
                 mac,
                 name: default_name,
-                ip: sanitized_ip,
+                ip: sanitized_ip.clone(),
                 visca_port,
                 ndi_port,
                 is_manual: false,
@@ -225,6 +257,10 @@ impl CameraRegistry {
                 last_seen_epoch_ms: current_epoch_ms(),
             };
             map.insert(id, cam.clone());
+            let ip_for_focus = sanitized_ip;
+            tokio::spawn(async move {
+                let _ = http_set_focus_auto(&ip_for_focus).await;
+            });
             (cam, true)
         }
     }
@@ -233,7 +269,8 @@ impl CameraRegistry {
         self.ensure_order(&cam.id);
         let mut map = self.cameras.write().unwrap();
         if let Some(existing) = map.get_mut(&cam.id) {
-            existing.ip = cam.ip;
+            let was_offline = !existing.is_online;
+            existing.ip = cam.ip.clone();
             existing.mac = cam.mac;
             existing.last_seen_epoch_ms = cam.last_seen_epoch_ms;
             existing.is_online = cam.is_online;
@@ -243,7 +280,19 @@ impl CameraRegistry {
             if !existing.is_manual && !cam.name.is_empty() {
                 existing.name = cam.name;
             }
+            if was_offline && cam.is_online {
+                let ip_for_focus = cam.ip.clone();
+                tokio::spawn(async move {
+                    let _ = http_set_focus_auto(&ip_for_focus).await;
+                });
+            }
         } else {
+            if cam.is_online {
+                let ip_for_focus = cam.ip.clone();
+                tokio::spawn(async move {
+                    let _ = http_set_focus_auto(&ip_for_focus).await;
+                });
+            }
             map.insert(cam.id.clone(), cam);
         }
     }
