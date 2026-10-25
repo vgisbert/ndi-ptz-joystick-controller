@@ -285,8 +285,19 @@ impl ViscaClient {
         self.send_command(&cmd).await
     }
 
-    /// PTZ Home position
+    /// PTZ Home position (robust broadcast sequence: Stop -> 40ms -> Home -> 40ms -> Home redundancy)
     pub async fn send_ptz_home(&self) -> Result<(), String> {
+        // 1. Detener cualquier movimiento en curso para liberar la maquina de estados de los motores
+        let stop_cmd = PanTiltCommand {
+            direction: PanTiltDirection::Stop,
+            pan_speed: PanSpeed::STOP,
+            tilt_speed: TiltSpeed::STOP,
+        };
+        let _ = self.send_command(&stop_cmd).await;
+
+        tokio::time::sleep(Duration::from_millis(40)).await;
+
+        // 2. Resetear cinematica local
         {
             let mut kin = self.kinematics.lock().await;
             kin.step();
@@ -295,12 +306,20 @@ impl ViscaClient {
             kin.pan_deg = 0.0;
             kin.tilt_deg = 0.0;
         }
-        let cmd = PanTiltCommand {
+
+        // 3. Enviar orden de retorno al Centro (Home)
+        let home_cmd = PanTiltCommand {
             direction: PanTiltDirection::Home,
             pan_speed: PanSpeed::STOP,
             tilt_speed: TiltSpeed::STOP,
         };
-        self.send_command(&cmd).await
+        self.send_command(&home_cmd).await?;
+
+        // 4. Retransmision redundante anti-perdida UDP tras 40ms
+        tokio::time::sleep(Duration::from_millis(40)).await;
+        let _ = self.send_command(&home_cmd).await;
+
+        Ok(())
     }
 
     /// PTZ Zoom control (Tele / Wide / Stop with speed 0..=7)

@@ -63,7 +63,7 @@ En `MEDIA_SerialProtocolInit`, el fabricante conectó únicamente dos callbacks 
 | **Inclinación Abajo** | `81 01 06 01 VV WW 03 02 FF` | Operativo. Velocidad angular constante. |
 | **Diagonales (45°)** | `81 01 06 01 VV WW 0p 0t FF` | **NO SOPORTADO EN HARDWARE / FIRMWARE.** El parser `CtrlDeviceMotion` descarta el byte de Tilt si Pan != 0x03 (ver sección 3.3). |
 | **Parada Pan/Tilt (STOP)** | `81 01 06 01 VV WW 03 03 FF` | Detiene los motores de giro e inclinación inmediatamente. |
-| **Ir al Centro (HOME)** | `81 01 06 04 FF` | Vuelve a `(pan=0, tilt=0)`. |
+| **Ir al Centro (HOME)** | `81 01 06 04 FF` | Vuelve a `(pan=0, tilt=0)`. Requiere secuencia de control profesional (STOP previo $\rightarrow$ 40ms $\rightarrow$ HOME $\rightarrow$ 40ms redundancia) para evitar colisiones con la máquina de estados de los servomotores en movimiento. |
 | **Zoom Acercar (Tele)** | `81 01 04 07 2p FF` (o `02 FF`) | Velocidad constante de zoom digital/óptico. |
 | **Zoom Alejar (Wide)** | `81 01 04 07 3p FF` (o `03 FF`) | Velocidad constante de zoom. |
 | **Zoom Parada (Stop)** | `81 01 04 07 00 FF` | Detiene el zoom. |
