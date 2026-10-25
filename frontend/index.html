@@ -42,7 +42,7 @@
     };
   </script>
 </head>
-<body class="bg-surface-dim text-txt-main font-mono text-[11px] antialiased flex flex-col h-screen justify-between p-1.5 gap-1.5">
+<body class="bg-surface-dim text-txt-main font-mono text-[11px] antialiased flex flex-col justify-start p-1.5 gap-1">
 
   <!-- ================= OVERLAY MODO DESCONECTADO (ESCALA DE GRISES) ================= -->
   <div id="offline-overlay" class="hidden fixed inset-0 z-40 bg-black/65 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1.5 p-3 text-center">
@@ -146,7 +146,7 @@
     </div>
 
     <!-- Columna Derecha: ZOOM + CENTRO + Espejo -->
-    <div class="flex-1 bg-surface p-2 rounded border border-border-tac/30 flex flex-col justify-between gap-1.5">
+    <div class="flex-1 bg-surface p-1.5 rounded border border-border-tac/30 flex flex-col justify-between gap-1">
       <div class="flex items-center justify-between text-[9px] text-txt-muted">
         <button id="btn-mirror-pan" class="px-1.5 py-0.5 rounded bg-surface-high hover:bg-surface-highest text-txt-muted hover:text-txt-main font-bold text-[9px] flex items-center gap-0.5 border border-border-tac/40 transition-colors" data-i18n-title="btn_mirror_title" title="Invertir sentido Derecha/Izquierda del Joystick y flechas para coincidir con Espejo en OBS">
           <span class="material-symbols-outlined text-[12px]">swap_horiz</span>
