@@ -229,7 +229,7 @@ impl CameraRegistry {
     ) -> (CameraInfo, bool) {
         let sanitized_ip = ip.trim().to_string();
         let mac = resolve_mac_for_ip(&sanitized_ip);
-        let id = mac_to_camera_id(&mac);
+        let id = sanitized_ip.clone();
 
         self.ensure_order(&id);
         {

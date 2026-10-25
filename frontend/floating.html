@@ -235,7 +235,7 @@
 
     function applyPresetsLabels() {
       try {
-        const raw = localStorage.getItem('ndi_cam_profiles_mac');
+        const raw = localStorage.getItem('ndi_cam_profiles') || localStorage.getItem('ndi_cam_profiles_mac');
         const profiles = raw ? JSON.parse(raw) : {};
         const p = profiles[cameraId];
         const defaultList = window.I18n.getDefaultPresets(true);

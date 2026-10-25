@@ -69,7 +69,7 @@
     <section class="bg-surface p-2 rounded border border-border-tac/30 flex flex-col gap-1.5 shrink-0">
       <div class="flex items-center justify-between border-b border-border-tac/30 pb-1">
         <span class="text-cyan-tac font-bold text-[10px] uppercase" data-i18n="sec_identification">Identificación (Por MAC)</span>
-        <span id="settings-cam-mac" class="text-[9px] text-amber-tac font-bold">MAC: --:--:--:--:--:--</span>
+        <span id="settings-cam-ip-header" class="text-[9px] text-amber-tac font-bold">IP: ---.---.---.---</span>
       </div>
 
       <div class="flex items-center justify-between gap-2">
@@ -172,10 +172,7 @@
             <span id="ip-status-text" class="font-bold text-[10px] text-txt-main" data-i18n="status_checking">COMPROBANDO...</span>
           </div>
         </div>
-        <div class="flex items-center justify-between border-t border-border-tac/20 pt-1">
-          <span class="text-[9px] text-txt-muted uppercase" data-i18n="lbl_mac_id">ID Físico (MAC):</span>
-          <span id="ip-modal-mac" class="text-[10px] text-amber-tac font-bold">--:--:--:--:--:--</span>
-        </div>
+
       </div>
 
       <!-- Última IP Asignada (útil para OBS / NDI / RTSP) -->
@@ -239,21 +236,21 @@
       const scanBtnText = document.getElementById('scan-btn-text');
       const ipScanFeedback = document.getElementById('ip-scan-feedback');
 
-      function loadMacProfiles() {
+      function loadProfiles() {
         try {
-          const raw = localStorage.getItem('ndi_cam_profiles_mac');
+          const raw = localStorage.getItem('ndi_cam_profiles') || localStorage.getItem('ndi_cam_profiles_mac');
           return raw ? JSON.parse(raw) : {};
         } catch (e) {
           return {};
         }
       }
 
-      function saveMacProfiles(profiles) {
-        localStorage.setItem('ndi_cam_profiles_mac', JSON.stringify(profiles));
+      function saveProfiles(profiles) {
+        localStorage.setItem('ndi_cam_profiles', JSON.stringify(profiles));
       }
 
       function ensureCameraProfile(cam, index) {
-        const profiles = loadMacProfiles();
+        const profiles = loadProfiles();
         const macKey = cam.id;
         const currentDefaults = window.I18n.getDefaultPresets();
         const defaultCamName = `${window.I18n.t('cam_prefix')} ${index + 1}`;
@@ -274,7 +271,7 @@
             profiles[macKey].presets = [...currentDefaults];
           }
         }
-        saveMacProfiles(profiles);
+        saveProfiles(profiles);
         const prof = profiles[macKey];
         const displayName = (prof.customName && prof.customName.trim()) ? prof.customName.trim() : defaultCamName;
         return { ...prof, displayName, defaultLabel: defaultCamName };
@@ -342,7 +339,7 @@
         const idx = Math.max(0, onlineCameras.findIndex((c) => c.id === camId));
         const defaultCamName = `${window.I18n.t('cam_prefix')} ${idx + 1}`;
         const cam = camerasMap[camId] || onlineCameras[idx];
-        const profiles = loadMacProfiles();
+        const profiles = loadProfiles();
         const prof = profiles[camId] || (cam ? ensureCameraProfile(cam, idx) : null);
         const defaultPresets = window.I18n.getDefaultPresets();
 
@@ -371,7 +368,7 @@
 
       function saveCurrentForm() {
         if (!activeCameraId) return;
-        const profiles = loadMacProfiles();
+        const profiles = loadProfiles();
         const idx = Math.max(0, onlineCameras.findIndex((c) => c.id === activeCameraId));
         const defaultLabel = `${window.I18n.t('cam_prefix')} ${idx + 1}`;
         const enteredName = cfgCamName.value.trim();
@@ -393,7 +390,7 @@
           presets
         };
 
-        saveMacProfiles(profiles);
+        saveProfiles(profiles);
         btnIpPreview.textContent = profiles[activeCameraId].lastIp;
         renderDynamicTabs();
       }

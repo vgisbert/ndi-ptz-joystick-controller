@@ -583,21 +583,21 @@
         }
       });
 
-      function loadMacProfiles() {
+      function loadProfiles() {
         try {
-          const raw = localStorage.getItem('ndi_cam_profiles_mac');
+          const raw = localStorage.getItem('ndi_cam_profiles') || localStorage.getItem('ndi_cam_profiles_mac');
           return raw ? JSON.parse(raw) : {};
         } catch (e) {
           return {};
         }
       }
 
-      function saveMacProfiles(profiles) {
-        localStorage.setItem('ndi_cam_profiles_mac', JSON.stringify(profiles));
+      function saveProfiles(profiles) {
+        localStorage.setItem('ndi_cam_profiles', JSON.stringify(profiles));
       }
 
       function ensureCameraProfile(cam, index) {
-        const profiles = loadMacProfiles();
+        const profiles = loadProfiles();
         const macKey = cam.id;
         const currentDefaults = window.I18n.getDefaultPresets();
         const defaultCamName = `${window.I18n.t('cam_prefix')} ${index + 1}`;
@@ -618,14 +618,14 @@
             profiles[macKey].presets = [...currentDefaults];
           }
         }
-        saveMacProfiles(profiles);
+        saveProfiles(profiles);
         const prof = profiles[macKey];
         const displayName = (prof.customName && prof.customName.trim()) ? prof.customName.trim() : defaultCamName;
         return { ...prof, displayName };
       }
 
       function applyCustomPresets(camId) {
-        const profiles = loadMacProfiles();
+        const profiles = loadProfiles();
         const p = profiles[camId];
         const defaultPresets = window.I18n.getDefaultPresets();
         const presets = (p && Array.isArray(p.presets)) ? p.presets : defaultPresets;
