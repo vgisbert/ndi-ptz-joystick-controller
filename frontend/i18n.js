@@ -94,6 +94,8 @@ const I18N_LOCALES = {
     // Pantalla de Configuración (settings.html)
     sec_identification: "Identificación de Cámara",
     lbl_cam_name: "NOM:",
+    err_duplicate_name: "¡REPETIDO!",
+    err_duplicate_name_title: "Este nombre ya lo utiliza otra cámara",
     btn_ip_title: "Ver IP para OBS, estado ON/OFFLINE y buscar cámaras en la red",
     btn_refocus: "ENFOQUE",
     btn_refocus_title: "Restablecer Autoenfoque y recalibrar nitidez de la lente",
@@ -208,6 +210,8 @@ const I18N_LOCALES = {
     // Settings Screen (settings.html)
     sec_identification: "Camera Identification",
     lbl_cam_name: "NAME:",
+    err_duplicate_name: "DUPLICATE!",
+    err_duplicate_name_title: "This name is already used by another camera",
     btn_ip_title: "View IP for OBS, ON/OFFLINE status and scan cameras on network",
     btn_refocus: "FOCUS",
     btn_refocus_title: "Reset Autofocus and recalibrate lens sharpness",

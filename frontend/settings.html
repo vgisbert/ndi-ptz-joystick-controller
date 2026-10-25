@@ -75,7 +75,8 @@
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5">
           <label class="text-[9px] text-txt-muted" data-i18n="lbl_cam_name">NOM:</label>
-          <input id="cfg-cam-name" type="text" value="CÁM 1" maxlength="8" class="w-[9.5ch] px-1.5 py-0.5 rounded bg-surface-lowest border border-border-tac/50 text-txt-main text-[10px] text-center focus:outline-none focus:border-cyan-tac">
+          <input id="cfg-cam-name" type="text" value="CÁM 1" maxlength="8" class="w-[9.5ch] px-1.5 py-0.5 rounded bg-surface-lowest border border-border-tac/50 text-txt-main text-[10px] text-center focus:outline-none focus:border-cyan-tac transition-colors">
+          <span id="cfg-cam-name-warn" class="hidden text-[9px] text-red-tac font-bold whitespace-nowrap animate-pulse" data-i18n="err_duplicate_name" data-i18n-title="err_duplicate_name_title" title="Este nombre ya lo utiliza otra cámara">¡REPETIDO!</span>
         </div>
 
         <div class="flex items-center gap-1.5">
@@ -345,6 +346,7 @@
         if (prof) {
           const shownName = (prof.customName && prof.customName.trim()) ? prof.customName.trim() : defaultCamName;
           cfgCamName.value = shownName;
+          checkCameraNameValidation();
           cfgCamIp.value = (cam && cam.ip) ? cam.ip : (prof.lastIp || '');
           btnIpPreview.textContent = cfgCamIp.value || '---.---.---.---';
           if (settingsCamIpHeader) {
@@ -365,12 +367,45 @@
         }
       }
 
+            const cfgCamNameWarn = document.getElementById('cfg-cam-name-warn');
+
+      function isCameraNameDuplicate(name, currentId) {
+        if (!name) return false;
+        const clean = name.trim().toUpperCase();
+        if (!clean) return false;
+        const profiles = loadProfiles();
+        return onlineCameras.some((c, idx) => {
+          if (c.id === currentId) return false;
+          const defaultName = `${window.I18n.t('cam_prefix')} ${idx + 1}`.toUpperCase();
+          const prof = profiles[c.id];
+          const otherName = (prof && prof.customName && prof.customName.trim())
+            ? prof.customName.trim().toUpperCase()
+            : defaultName;
+          return otherName === clean;
+        });
+      }
+
+      function checkCameraNameValidation() {
+        const entered = cfgCamName.value.trim();
+        const isDup = isCameraNameDuplicate(entered, activeCameraId);
+        if (isDup) {
+          cfgCamName.className = 'w-[9.5ch] px-1.5 py-0.5 rounded bg-surface-lowest border-2 border-red-tac text-red-tac font-bold text-[10px] text-center focus:outline-none shadow-[0_0_8px_rgba(255,23,68,0.5)] transition-colors';
+          if (cfgCamNameWarn) cfgCamNameWarn.classList.remove('hidden');
+          return false;
+        } else {
+          cfgCamName.className = 'w-[9.5ch] px-1.5 py-0.5 rounded bg-surface-lowest border border-border-tac/50 text-txt-main text-[10px] text-center focus:outline-none focus:border-cyan-tac transition-colors';
+          if (cfgCamNameWarn) cfgCamNameWarn.classList.add('hidden');
+          return true;
+        }
+      }
+
       function saveCurrentForm() {
         if (!activeCameraId) return;
         const profiles = loadProfiles();
         const idx = Math.max(0, onlineCameras.findIndex((c) => c.id === activeCameraId));
         const defaultLabel = `${window.I18n.t('cam_prefix')} ${idx + 1}`;
         const enteredName = cfgCamName.value.trim();
+        const isDup = isCameraNameDuplicate(enteredName, activeCameraId);
         const defaultPresets = window.I18n.getDefaultPresets();
 
         const presets = [];
@@ -383,7 +418,7 @@
         profiles[activeCameraId] = {
           id: activeCameraId,
           mac: cam.mac || existing.mac || '',
-          customName: (enteredName && enteredName !== defaultLabel) ? enteredName : (enteredName || defaultLabel),
+          customName: isDup ? (existing.customName || defaultLabel) : ((enteredName && enteredName !== defaultLabel) ? enteredName : (enteredName || defaultLabel)),
           lastIp: cfgCamIp.value.trim() || cam.ip || existing.lastIp || '',
           port: 1259,
           presets
@@ -532,7 +567,27 @@
       });
 
       // Auto-guardado en tiempo real al escribir
-      cfgCamName.addEventListener('input', () => saveCurrentForm());
+      cfgCamName.addEventListener('input', () => {
+        const isValid = checkCameraNameValidation();
+        if (isValid) {
+          saveCurrentForm();
+        }
+      });
+
+      cfgCamName.addEventListener('blur', () => {
+        const entered = cfgCamName.value.trim();
+        if (isCameraNameDuplicate(entered, activeCameraId)) {
+          const profiles = loadProfiles();
+          const prof = profiles[activeCameraId];
+          const idx = Math.max(0, onlineCameras.findIndex((c) => c.id === activeCameraId));
+          const fallback = (prof && prof.customName && prof.customName.trim())
+            ? prof.customName.trim()
+            : `${window.I18n.t('cam_prefix')} ${idx + 1}`;
+          cfgCamName.value = fallback;
+          checkCameraNameValidation();
+          saveCurrentForm();
+        }
+      });
       presetInputs.forEach((inp) => inp.addEventListener('input', () => saveCurrentForm()));
 
       window.addEventListener('keydown', (e) => {
