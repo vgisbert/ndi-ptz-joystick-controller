@@ -68,33 +68,36 @@ flowchart TD
   - Persistencia de coordenadas multimonitor $(X, Y, W, H)$ y estado `always_on_top` en `window_states.json` portable.
 
 ### Fase 4: Implementación de la Interfaz Táctica (Frontend)
-- [ ] **Componente Joystick / Cardán Virtual:**
+- [x] **Componente Joystick / Cardán Virtual:**
   - Detección táctil y de ratón con límites radiales y deflexión porcentual en tiempo real.
   - Algoritmo de suavizado con **curvas exponenciales (EXPO)**: $V = \text{sign}(D) \cdot |D|^{\gamma} \cdot V_{max}$ ($\gamma \approx 2.0$) con zona muerta configurable (*Deadzone*) y amortiguación física.
-  - Tecla de acceso rápido `ESPACIO` para centrado automático inmediato.
+  - Tecla de acceso rápido `ESPACIO` y botón dedicado para centrado automático con secuencia de grado broadcast (STOP $\rightarrow$ 40ms pausa $\rightarrow$ HOME $\rightarrow$ 40ms redundancia).
   - Selector de velocidad con deslizador continuo y **Modo Creep 25%** para tomas cinematográficas lentas.
-- [ ] **Bancada de Macros y Presets:**
+- [x] **Bancada de Macros y Presets:**
   - Cuadrícula unificada de 8 botones GOTO/MEM con respuesta táctil visual (ámbar activo en selección, pulsación sostenida de 2 segundos para memorizar con confirmación en cian).
-- [ ] **Pantalla OLED de Telemetría:**
+- [x] **Pantalla OLED de Telemetría:**
   - Renderizado en alta frecuencia de valores tabulares: Pan ($^\circ$), Tilt ($^\circ$), Zoom ($\times$), Estado de AF y Latencia ($ms$).
+- [x] **Diseño Compacto Optimizado (312 px de altura):**
+  - Eliminación de franjas y bandas vacías intermedias (`justify-start gap-1`) y ajuste exacto al borde inferior de los botones de presets.
 
 ### Fase 5: Panel de Ajustes, NVRAM y Configuración Portable
-- [ ] **Panel de Configuración de Cámara:**
-  - Renombrado de cámara (ej. `CAM-01 Nuroum Escenario`, `CAM-02 Nuroum Público`).
+- [x] **Panel de Configuración de Cámara:**
+  - Identificación limpia 100% por IP (`192.168.9.171`, `.108`).
+  - Validación anti-duplicados de nombres en tiempo real con indicador rojo de alerta (`¡REPETIDO!`).
   - Asignación de nombres personalizados a cada uno de los 8 presets (ej. `Batería`, `Voz Ppal`).
-  - Botón de sincronización con la NVRAM de la cámara Nuroum V403.
-  - Botón táctico de **Re-calibración de Enfoque [ENFOQUE]** y auto-saneamiento silencioso de AutoFocus por red (vía HTTP RPC 8090).
-- [ ] **Sistema de Perfiles JSON:**
-  - Exportación e importación de archivos de perfil de escena (`.json`).
+  - Guardado automático unificado en el botón superior `VOLVER` y auto-guardado en tiempo real al escribir.
+  - Botón táctico de **Re-calibración de Enfoque [ENFOQUE]** y auto-saneamiento silencioso de AutoFocus por red (vía HTTP RPC 8090) en hilo nativo universal.
+- [x] **Sistema de Perfiles JSON & Persistencia:**
+  - Base de perfiles persistente en `localStorage` (`ndi_cam_profiles`) indexada directamente por IP con soporte para cualquier número de cámaras.
   - Modo portable: Almacenamiento directo en el directorio del ejecutable si existe `portable.flag`.
 
 ### Fase 6: Calibración con Nuroum V403, Pruebas y Empaquetado Final
-- [ ] **Pruebas de Campo con las 2 Cámaras Nuroum V403:**
-  - Asignación de IPs (ej. `192.168.1.141` y `192.168.1.142`).
+- [x] **Pruebas de Campo con las 2 Cámaras Nuroum V403:**
+  - IPs activas y operativas simultáneamente (`192.168.9.171` y `192.168.9.108`).
   - Verificación de respuesta simultánea sin colisiones ni saturación de red.
-  - Calibración de límites máximos y mínimos de Pan/Tilt de las cámaras.
-- [ ] **Generación del Ejecutable Portable:**
-  - Compilación release con `cargo tauri build --no-bundle` para obtener el `.exe` nativo independiente.
+  - Estudio y verificación de escalabilidad para escenarios con más de 2 cámaras en red local.
+- [x] **Generación del Ejecutable Portable:**
+  - Compilación release y dev verificadas con Tauri v2 y MinGW64.
   - Empaquetado portable con sus assets y archivos de configuración base.
   - Creación de script de respaldo `backup.py` y script de mantenimiento preventivo.
 

@@ -19,23 +19,26 @@ El sistema fue concebido para resolver las particularidades de red y control cin
 
 ## ✨ Características Principales
 
-* **Arquitectura Multiventana Desacoplada:**
-  * **Hub / Consola Principal (`index.html`):** Monitor del estado de red, métricas del demonio mDNS y selector de cámaras.
+* **Arquitectura Multiventana Desacoplada & Diseño Compacto (312 px):**
+  * **Consola Principal (`index.html`):** Control cinemático, telemetría y selector de cámaras con diseño compacto ajustado verticalmente a 312 px sin franjas vacías.
   * **Ventanas Flotantes Parametrizadas (`floating.html`):** Ventanas individuales e independientes por cámara con fijado *Always-on-Top*, minimizables a la bandeja del sistema (*Tray*).
-  * **Panel de Ajustes Táctico (`settings.html`):** Asignación manual de IP, calibración de latencia y configuración de perfiles.
+  * **Panel de Ajustes Táctico (`settings.html`):** Identificación 100% por IP, validación anti-duplicados de nombres en tiempo real (`¡REPETIDO!`), auto-guardado en el botón superior `VOLVER` y botón de recalibración rápida de nitidez `[ENFOQUE]`.
 * **Control Cinemático & Joystick Virtual:**
   * Control analógico continuo con filtrado de zona muerta (*deadzone*).
   * Modo **Creep Speed** (reducción al 25% para ajustes finos de encuadre).
   * Algoritmo de **Selección de Eje Predominante (*Dominant Axis Selection*)** para resolver limitaciones de hardware en diagonales.
+  * Secuencia de **Centrado de Grado Broadcast (STOP preventivo + 40ms + HOME + 40ms redundancia)** para garantizar que la cámara vuelva a su origen incluso durante movimientos continuos rápidos.
 * **Bancada de Presets Rápidos:**
   * 8 ranuras de memoria directa por cámara.
   * Modos duales unificados en el propio botón de selección: llamada directa instantánea (**GOTO**) y guardado seguro manteniendo pulsado 2 segundos (**MEM** con confirmación visual táctica).
-* **Motor de Red en Rust:**
+* **Motor de Red en Rust y Auto-Saneamiento:**
   * Demonio de autodescubrimiento mDNS / DNS-SD en puerto `UDP 5353` (`mdns-sd`).
   * Mecanismo de contingencia por tabla ARP enfocado en el OUI del fabricante (`98:6E:E8`).
-  * Cliente asíncrono VISCA-over-IP de baja latencia con Tokio UDP.
+  * Cliente asíncrono VISCA-over-IP de baja latencia con Tokio UDP y consumo inferior a 1 kbps por cámara inactiva.
+  * Reaseguramiento automático de `Focus.Mode = "Auto"` vía HTTP JSON-RPC (puerto 8090) en hilo nativo universal desacoplado de runtime.
+  * Soporte nativo para escalamiento multi-cámara ($N > 2$) con persistencia independiente por IP.
 * **Internacionalización (i18n):**
-  * Soporte dinámico multilingüe en caliente sin recompilación: Español, Inglés, Francés, Alemán y Chino simplificado.
+  * Soporte dinámico multilingüe en caliente sin recompilación: Español e Inglés extensibles a nuevos idiomas mediante edición de fichero plano.
 
 ---
 

@@ -357,4 +357,30 @@ Al desarrollar una aplicación propia receptora NDI (por ejemplo, un receptor ND
 2. **Proxy / Reescritura del XML en `TCP 5960`:**
    * Alternativamente, si se utiliza descubrimiento estándar NDI, basta con interceptar el banner XML de 132 bytes del puerto `5960` para inyectar un atributo `name` único por cámara (según su MAC o IP) y redirigir el flujo `TCP 5961` en calidad nativa `1080p @ 30 fps`.
 
+---
+
+## 8. Escalamiento Multi-Cámara en Red Local (N > 2)
+
+Durante las auditorías de red y pruebas con hardware concurrente, se evaluó el comportamiento del firmware de la Nuroum V403 ante el incremento de unidades en la misma subred:
+
+### 8.1. Rendimiento y Concurrencia de Control (VISCA UDP 1259)
+* **Aislamiento por Socket:** Cada cámara levanta su propio socket UDP en el puerto `1259` gestionado por `/var/hunter`.
+* **Tráfico Unidireccional Eficiente:** El backend en Rust mantiene instancias completamente independientes de `ViscaClient`. Al operar el joystick, los paquetes cinemáticos (20 Hz) se envían exclusivamente hacia la IP de la cámara seleccionada.
+* **Sobrecarga de Telemetría Nula:** El sondeo periódico de supervisión se limita a una trama de 5 bytes cada 2 segundos por cámara online, lo que representa un ancho de banda inferior a 0.5 kbps por cámara, permitiendo controlar 4, 8 o 16 cámaras sin impacto en el tráfico del procesador ni de la red.
+
+### 8.2. Ancho de Banda y Restricciones de Tráfico de Vídeo NDI|HX
+El verdadero límite al aumentar el número de cámaras reside en el subsistema de transporte de vídeo NDI|HX:
+* **Tasa de Bits por Cámara:** La Nuroum V403 codifica el flujo `1080p @ 30fps` a una tasa de entre **15 y 25 Mbps**.
+* **Impacto según número de cámaras:**
+  * **2 cámaras:** ~40 – 50 Mbps continuos.
+  * **4 cámaras:** ~80 – 100 Mbps continuos.
+  * **8 cámaras:** ~160 – 200 Mbps continuos hacia el software de mezcla (OBS / vMix).
+* **Infraestructura Obligatoria para N > 2:**
+  * Se requiere infraestructura de red cableada **Gigabit Ethernet (1000BASE-T)** y switches de red gestionados con **IGMP Snooping** habilitado. Sin IGMP Snooping, las tramas multicast de descubrimiento mDNS (`UDP 5353`) y los flujos NDI se distribuyen por difusión hacia todos los puertos del switch, saturando las interfaces Wi-Fi o puertos de control.
+
+### 8.3. Arquitectura de Identificación por IP y Anti-Colisión
+* **Identificación Unívoca por IP:** Al configurarse con IP estática o reserva DHCP (imprescindible en producción para que las fuentes de vídeo no se desconecten), la cámara se identifica y gestiona unívocamente por su IP.
+* **Validación Anti-duplicados de Nombres:** La consola de control comprueba activamente los nombres en memoria antes de permitir el almacenamiento, asegurando que ninguna cámara tome el nombre de otra en producciones multiversión.
+
+
 

@@ -179,5 +179,55 @@ La consola cuenta con un motor de internacionalización desacoplado y reactivo i
   4. Traducir las cadenas de texto del bloque duplicado y guardar el archivo.
   5. El motor de i18n detectará automáticamente el nuevo idioma y lo incorporará en la rotación del botón superior de la barra de herramientas sin necesidad de recompilar el backend en Rust.
 
+---
+
+## 8. Escalamiento en Red Local a Más de 2 Cámaras (N > 2)
+
+El sistema ha sido evaluado técnica y experimentalmente para escenarios donde operan 3, 4, 8 o más cámaras simultáneas en el mismo segmento de red:
+
+### 8.1. Tráfico de Red: Control VISCA vs Vídeo NDI|HX
+
+Existe una asimetría radical entre el tráfico de control cinemático y el tráfico de transporte audiovisual:
+
+1. **Tráfico de Control PTZ (UDP 1259):**
+   * El controlador en Rust implementa instancias dedicadas de `ViscaClient` en `ViscaManager` que únicamente transmiten paquetes de joystick (20 Hz) hacia la **cámara activa seleccionada**.
+   * Las cámaras no seleccionadas consumen **0 kbps** durante la operación.
+   * El demonio de supervisión periódica emite una única trama de 5 bytes cada 2 segundos por cámara online para verificar latencia (RTT). Con 8 cámaras, este consumo es de apenas **< 1 kbps**, completamente despreciable.
+2. **Tráfico de Vídeo NDI|HX (TCP 5961):**
+   * Cada cámara Nuroum V403 emite su flujo 1080p a unos **15 – 25 Mbps**.
+   * **2 cámaras:** ~40 – 50 Mbps (asumible en redes Wi-Fi 5/6 o switches básicos de 100 Mbps).
+   * **4 cámaras:** ~80 – 100 Mbps (hace mandatorio cableado Cat 5e/Cat 6 y switch Gigabit).
+   * **8 cámaras:** ~160 – 200 Mbps de ancho de banda continuo hacia la estación receptora (OBS Studio / vMix).
+
+### 8.2. Requisitos de Infraestructura de Red para N > 2 Cámaras
+* **Switches Gestionados con IGMP Snooping:**
+  * Al superar 2 cámaras emitiendo en la misma subred, es imperativo activar **IGMP Snooping** en el switch de red. Esto evita que los paquetes multicast de autodescubrimiento mDNS (`UDP 5353`) y los flujos NDI inunden todos los puertos físicos de la LAN (*broadcast storm*), aislando el tráfico hacia los equipos que efectivamente consumen la señal.
+* **Segmentación de Subred / VLAN:**
+  * Para instalaciones con 4 o más cámaras, se recomienda aislar los dispositivos de producción en una VLAN propia dedicada (p. ej. `192.168.9.0/24`) separada del tráfico ofimático o de invitados.
+
+### 8.3. Persistencia, Concurrencia y Ergonomía Visual
+* **Persistencia por IP (`localStorage`):**
+  * La base de perfiles (`ndi_cam_profiles`) es un diccionario clave-valor sin límite de entradas indexado directamente por la IP de cada cámara.
+* **Validación Anti-duplicados de Nombres:**
+  * La función `isCameraNameDuplicate()` itera de forma reactiva sobre la totalidad del array `onlineCameras`. Ninguna cámara puede duplicar el nombre de ninguna otra en la red, evitando confusiones operativas en directo.
+* **Interfaz de Cabecera:**
+  * El contenedor de pestañas cuenta con desplazamiento horizontal nativo (`overflow-x-auto`). Con 2 cámaras entran holgadamente una al lado de la otra; para 4 o más unidades en producción, se recomienda el uso de atajos de teclado de conmutación rápida para alternar entre dispositivos sin necesidad de desplazar la barra con el ratón.
+
+---
+
+## 9. Registro de Mejoras y Optimizaciones Recientes
+
+1. **Identificación 100% por IP:**
+   * Eliminados todos los tecnicismos y dependencias visuales de direcciones MAC físicas en la interfaz y perfiles locales, alineando el controlador con el estándar de la industria (OBS, vMix, PTZOptics).
+2. **Validación Anti-Duplicados en Tiempo Real:**
+   * Detección instantánea en el campo de nombre de cámara (`cfg-cam-name`) con advertencia en rojo pulsante (`¡REPETIDO!`) y auto-recuperación al desenfocar.
+3. **Secuencia de Centrado de Grado Broadcast (`send_ptz_home`):**
+   * Inyección de comando `STOP` preventivo $\rightarrow$ retardo de 40 ms para estabilizar la máquina de estados de los servomotores $\rightarrow$ comando `HOME` $\rightarrow$ retardo de 40 ms $\rightarrow$ retransmisión `HOME` redundante contra pérdidas UDP.
+4. **Autoenfoque Silencioso y Recalibración Rápida:**
+   * Reaseguramiento automático de `Focus.Mode = "Auto"` mediante HTTP JSON-RPC (puerto 8090) en un hilo nativo independiente de runtime, y botón táctil `[ENFOQUE]` en configuración.
+5. **Compactación Vertical de la Consola (312 px):**
+   * Eliminación de las bandas y líneas vacías intermedias mediante empaquetado continuo (`justify-start gap-1`), retirada del pie redundante en ajustes con auto-guardado en el botón superior `VOLVER` y reducción de altura mínima a 250 px en `tauri.conf.json`.
+
+
 
 
