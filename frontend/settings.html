@@ -65,10 +65,10 @@
   <!-- ================= 2. CONTENIDO COMPACTO DE CONFIGURACIÓN ================= -->
   <main class="flex flex-col justify-start gap-1 min-h-0">
 
-    <!-- Datos de Red, MAC y Nombre de Cámara -->
+    <!-- Datos de Red y Nombre de Cámara -->
     <section class="bg-surface p-2 rounded border border-border-tac/30 flex flex-col gap-1.5 shrink-0">
       <div class="flex items-center justify-between border-b border-border-tac/30 pb-1">
-        <span class="text-cyan-tac font-bold text-[10px] uppercase" data-i18n="sec_identification">Identificación (Por MAC)</span>
+        <span class="text-cyan-tac font-bold text-[10px] uppercase" data-i18n="sec_identification">Identificación de Cámara</span>
         <span id="settings-cam-ip-header" class="text-[9px] text-amber-tac font-bold">IP: ---.---.---.---</span>
       </div>
 
@@ -85,7 +85,7 @@
             <span id="btn-refocus-text" data-i18n="btn_refocus">ENFOQUE</span>
           </button>
 
-          <!-- Botón IP (abre panel con última IP para OBS, MAC, estado ON/OFFLINE y BÚSQUEDA en red) -->
+          <!-- Botón IP (abre panel con última IP para OBS, estado ON/OFFLINE y BÚSQUEDA en red) -->
           <button id="btn-open-ip-modal" class="px-2.5 py-1 rounded bg-surface-high hover:bg-surface-highest text-cyan-tac font-bold text-[10px] border border-cyan-tac/40 flex items-center gap-1.5 shadow-[0_0_6px_rgba(0,240,255,0.15)] active:scale-95 transition-all" data-i18n-title="btn_ip_title" title="Ver IP para OBS, estado ON/OFFLINE y buscar cámaras en la red">
             <span id="btn-ip-dot" class="w-2 h-2 rounded-full bg-cyan-tac shadow-[0_0_5px_#00f0ff]"></span>
             <span>IP</span>
@@ -99,7 +99,7 @@
     <section class="bg-surface p-2 rounded border border-border-tac/30 flex flex-col gap-1.5 flex-1 justify-between">
       <div class="flex items-center justify-between border-b border-border-tac/30 pb-1">
         <span class="text-amber-tac font-bold text-[10px] uppercase" data-i18n="sec_presets_title">Etiquetas de Puntos (1-8)</span>
-        <span class="text-[9px] text-txt-muted" data-i18n="sec_presets_by_mac">GUARDADO POR MAC</span>
+        <span class="text-[9px] text-txt-muted" data-i18n="sec_presets_by_ip">GUARDADO POR IP</span>
       </div>
 
       <div id="presets-list" class="grid grid-cols-2 gap-x-2 gap-y-1.5 my-auto">
@@ -150,7 +150,7 @@
 
 
 
-  <!-- ================= MODAL DE IP, MAC, ESTADO ON/OFFLINE Y BÚSQUEDA EN RED ================= -->
+  <!-- ================= MODAL DE IP, ESTADO ON/OFFLINE Y BÚSQUEDA EN RED ================= -->
   <div id="ip-config-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-[2px] flex items-center justify-center p-3">
     <div class="w-full max-w-xs rounded-lg bg-surface border border-border-tac p-3 flex flex-col gap-2 shadow-2xl">
       <div class="flex items-center justify-between border-b border-border-tac/40 pb-1">
@@ -163,7 +163,7 @@
         </button>
       </div>
 
-      <!-- Indicador de Estado ON / OFFLINE + MAC -->
+      <!-- Indicador de Estado ON / OFFLINE -->
       <div class="flex flex-col gap-1 bg-surface-lowest px-2.5 py-1.5 rounded border border-border-tac/40">
         <div class="flex items-center justify-between">
           <span class="text-[9px] text-txt-muted uppercase" data-i18n="lbl_cam_status">Estado Cámara:</span>
@@ -250,12 +250,12 @@
 
       function ensureCameraProfile(cam, index) {
         const profiles = loadProfiles();
-        const macKey = cam.id;
+        const camKey = cam.id;
         const currentDefaults = window.I18n.getDefaultPresets();
         const defaultCamName = `${window.I18n.t('cam_prefix')} ${index + 1}`;
 
-        if (!profiles[macKey]) {
-          profiles[macKey] = {
+        if (!profiles[camKey]) {
+          profiles[camKey] = {
             id: cam.id,
             mac: cam.mac || '',
             customName: '',
@@ -264,14 +264,14 @@
             presets: [...currentDefaults]
           };
         } else {
-          profiles[macKey].mac = cam.mac || profiles[macKey].mac || '';
-          profiles[macKey].lastIp = cam.ip || profiles[macKey].lastIp;
-          if (!Array.isArray(profiles[macKey].presets) || profiles[macKey].presets.length < 8) {
-            profiles[macKey].presets = [...currentDefaults];
+          profiles[camKey].mac = cam.mac || profiles[camKey].mac || '';
+          profiles[camKey].lastIp = cam.ip || profiles[camKey].lastIp;
+          if (!Array.isArray(profiles[camKey].presets) || profiles[camKey].presets.length < 8) {
+            profiles[camKey].presets = [...currentDefaults];
           }
         }
         saveProfiles(profiles);
-        const prof = profiles[macKey];
+        const prof = profiles[camKey];
         const displayName = (prof.customName && prof.customName.trim()) ? prof.customName.trim() : defaultCamName;
         return { ...prof, displayName, defaultLabel: defaultCamName };
       }
@@ -398,7 +398,7 @@
 
       function handleCamerasListUpdate(list, forceRender = false) {
         const filtered = Array.isArray(list) ? list.filter((c) => c.is_online) : [];
-        const sig = filtered.map((c) => `${c.id}:${c.ip}:${c.mac}`).join('|');
+        const sig = filtered.map((c) => `${c.id}:${c.ip}:${c.is_online}`).join('|');
         if (!forceRender && sig === lastTopologySig) {
           return;
         }
@@ -448,7 +448,7 @@
           handleCamerasListUpdate(list, true);
           setOnlineVisuals(true, cam.latency_ms || 2);
           saveCurrentForm();
-          ipScanFeedback.textContent = window.I18n.t('feedback_response_ok', { ip, mac: cam.mac || 'N/A' });
+          ipScanFeedback.textContent = window.I18n.t('feedback_response_ok', { ip });
           ipScanFeedback.className = 'text-[9px] text-cyan-tac font-bold text-center min-h-[13px]';
         } catch (e) {
           setOnlineVisuals(false);

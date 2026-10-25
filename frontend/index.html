@@ -598,12 +598,12 @@
 
       function ensureCameraProfile(cam, index) {
         const profiles = loadProfiles();
-        const macKey = cam.id;
+        const camKey = cam.id;
         const currentDefaults = window.I18n.getDefaultPresets();
         const defaultCamName = `${window.I18n.t('cam_prefix')} ${index + 1}`;
 
-        if (!profiles[macKey]) {
-          profiles[macKey] = {
+        if (!profiles[camKey]) {
+          profiles[camKey] = {
             id: cam.id,
             mac: cam.mac || '',
             customName: '',
@@ -612,14 +612,14 @@
             presets: [...currentDefaults]
           };
         } else {
-          profiles[macKey].mac = cam.mac || profiles[macKey].mac || '';
-          profiles[macKey].lastIp = cam.ip || profiles[macKey].lastIp;
-          if (!Array.isArray(profiles[macKey].presets) || profiles[macKey].presets.length < 8) {
-            profiles[macKey].presets = [...currentDefaults];
+          profiles[camKey].mac = cam.mac || profiles[camKey].mac || '';
+          profiles[camKey].lastIp = cam.ip || profiles[camKey].lastIp;
+          if (!Array.isArray(profiles[camKey].presets) || profiles[camKey].presets.length < 8) {
+            profiles[camKey].presets = [...currentDefaults];
           }
         }
         saveProfiles(profiles);
-        const prof = profiles[macKey];
+        const prof = profiles[camKey];
         const displayName = (prof.customName && prof.customName.trim()) ? prof.customName.trim() : defaultCamName;
         return { ...prof, displayName };
       }
@@ -667,7 +667,7 @@
 
           const btn = document.createElement('button');
           btn.setAttribute('data-cam-id', cam.id);
-          btn.title = `${prof.displayName} · IP: ${cam.ip} · MAC: ${cam.mac}`;
+          btn.title = `${prof.displayName} · IP: ${cam.ip}`;
           const isSelected = cam.id === activeCameraId;
 
           if (isSelected) {
@@ -696,7 +696,7 @@
         const cam = camerasMap[camId];
         if (cam) {
           cardHeaderIp.textContent = cam.ip;
-          cardHeaderIp.title = `MAC: ${cam.mac || 'N/A'} · IP OBS: ${cam.ip}`;
+          cardHeaderIp.title = `IP OBS: ${cam.ip}`;
         }
         applyCustomPresets(camId);
         renderDynamicCameraTabs();
@@ -707,7 +707,7 @@
 
       async function handleCamerasListUpdate(list, forceRender = false) {
         const filtered = Array.isArray(list) ? list.filter((c) => c.is_online) : [];
-        const sig = filtered.map((c) => `${c.id}:${c.ip}:${c.mac}`).join('|');
+        const sig = filtered.map((c) => `${c.id}:${c.ip}:${c.is_online}`).join('|');
 
         filtered.forEach((c) => {
           if (camerasMap[c.id]) {

@@ -661,8 +661,8 @@ pub async fn perform_network_discovery_cycle(
                     None,
                 );
                 println!(
-                    "[DISCOVERY] Camara hallada en barrido: id={} mac={} ip={} ({} ms)",
-                    cam.id, cam.mac, cam.ip, rtt
+                    "[DISCOVERY] Camara hallada en barrido: {} ({} ms)",
+                    cam.ip, rtt
                 );
                 let client = visca_manager
                     .get_or_create(&cam.id, SocketAddr::new(IpAddr::V4(ip), visca_port))

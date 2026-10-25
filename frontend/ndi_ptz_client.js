@@ -15,7 +15,7 @@
             }
             console.log('[NDI Mock] get_cameras invoked');
             return [
-                { id: 'cam-01', mac: '98:6E:E8:00:00:01', name: 'CÁM 1', ip: '192.168.1.101', visca_port: 1259, is_manual: false, is_online: true, latency_ms: 4 }
+                { id: '192.168.1.101', mac: '', name: 'CÁM 1', ip: '192.168.1.101', visca_port: 1259, is_manual: false, is_online: true, latency_ms: 4 }
             ];
         },
 
