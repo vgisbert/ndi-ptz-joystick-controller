@@ -215,7 +215,7 @@
       let camerasMap = {};
 
       const settingsCamTabs = document.getElementById('settings-cam-tabs');
-      const settingsCamMac = document.getElementById('settings-cam-mac');
+      const settingsCamIpHeader = document.getElementById('settings-cam-ip-header');
       const cfgCamName = document.getElementById('cfg-cam-name');
       const cfgCamIp = document.getElementById('cfg-cam-ip');
       const presetInputs = document.querySelectorAll('.preset-input');
@@ -226,8 +226,7 @@
 
       const ipConfigModal = document.getElementById('ip-config-modal');
       const ipModalTitle = document.getElementById('ip-modal-title');
-      const ipModalMac = document.getElementById('ip-modal-mac');
-      const ipStatusBadge = document.getElementById('ip-status-badge');
+            const ipStatusBadge = document.getElementById('ip-status-badge');
       const ipStatusDot = document.getElementById('ip-status-dot');
       const ipStatusText = document.getElementById('ip-status-text');
       const btnVerifyIp = document.getElementById('btn-verify-ip');
@@ -316,7 +315,7 @@
 
           const btn = document.createElement('button');
           btn.setAttribute('data-cam-id', cam.id);
-          btn.title = `MAC: ${cam.mac} · IP: ${cam.ip}`;
+          btn.title = `${prof.displayName} · IP: ${cam.ip}`;
           if (cam.id === activeCameraId) {
             btn.className = 'cam-tab px-2 py-0.5 rounded bg-amber-tac text-surface-lowest font-bold text-[10px] shrink-0';
           } else {
@@ -348,9 +347,9 @@
           cfgCamName.value = shownName;
           cfgCamIp.value = (cam && cam.ip) ? cam.ip : (prof.lastIp || '');
           btnIpPreview.textContent = cfgCamIp.value || '---.---.---.---';
-          const macStr = (cam && cam.mac) ? cam.mac : (prof.mac || 'N/A');
-          settingsCamMac.textContent = `MAC: ${macStr}`;
-          ipModalMac.textContent = macStr;
+          if (settingsCamIpHeader) {
+            settingsCamIpHeader.textContent = `IP: ${(cam && cam.ip) ? cam.ip : (prof.lastIp || '---')}`;
+          }
           ipModalTitle.textContent = window.I18n.t('modal_network_title', { name: shownName });
 
           presetInputs.forEach((inp, i) => {
