@@ -54,14 +54,18 @@ if not exist "dist_portable" mkdir "dist_portable"
 copy /Y "src-tauri\target\release\ndi-ptz-joystick-controller.exe" "dist_portable\NDI-PTZ-Controller.exe" >nul
 copy /Y "src-tauri\target\release\WebView2Loader.dll" "dist_portable\WebView2Loader.dll" >nul
 
-echo Generando archivo ZIP comprimido...
-powershell -NoProfile -Command "Compress-Archive -Path 'dist_portable\*' -DestinationPath 'NDI-PTZ-Controller-Windows-Portable.zip' -Force"
+:: Limpiar archivos ZIP previos para evitar anidamiento circular
+if exist "dist_portable\NDI-PTZ-Controller-Windows-Portable.zip" del /F /Q "dist_portable\NDI-PTZ-Controller-Windows-Portable.zip" >nul 2>&1
+if exist "NDI-PTZ-Controller-Windows-Portable.zip" del /F /Q "NDI-PTZ-Controller-Windows-Portable.zip" >nul 2>&1
+
+echo Generando archivo ZIP comprimido dentro de 'dist_portable'...
+powershell -NoProfile -Command "Compress-Archive -Path 'dist_portable\*' -DestinationPath 'dist_portable\NDI-PTZ-Controller-Windows-Portable.zip' -Force"
 
 echo.
 echo ======================================================
 echo  [LISTO] Paquete portable generado con exito:
 echo  - Carpeta: %~dp0dist_portable\
-echo  - Archivo ZIP: %~dp0NDI-PTZ-Controller-Windows-Portable.zip
+echo  - Archivo ZIP: %~dp0dist_portable\NDI-PTZ-Controller-Windows-Portable.zip
 echo ======================================================
 echo.
 echo Para probar en otro PC Windows 10, simplemente copia
