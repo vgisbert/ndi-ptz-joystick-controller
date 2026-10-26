@@ -8,6 +8,8 @@
 src-tauri/target/
 *.rs.bk
 *.pdb
+*.dmp
+*.crash
 
 # Distribuciones compiladas y paquetes binarios
 dist_portable/
@@ -23,8 +25,8 @@ bundle/
 *.7z
 *.tar.gz
 
-# Archivos generados por Tauri
-src-tauri/gen/schemas/
+# Archivos generados automáticamente por Tauri
+src-tauri/gen/
 window_states.json
 **/window_states.json
 
@@ -37,7 +39,11 @@ STITCH/
 *.tmp
 *.log
 
-# Cachés de Python (ejecución de backup.py)
+# Entornos virtuales y cachés de Python (mantenimiento / backup.py)
+venv/
+.venv/
+env/
+ENV/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -66,6 +72,9 @@ yarn-error.log*
 .idea/
 *.sublime-project
 *.sublime-workspace
+*.swp
+*.swo
+*~
 
 # Archivos del sistema operativo
 Thumbs.db
@@ -74,3 +83,4 @@ Desktop.ini
 ehthumbs.db
 [Nn]et[Hh]ood
 [Pp]rint[Hh]ood
+*.lnk
