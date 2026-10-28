@@ -28,6 +28,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             "quit" => {
+                crate::process_cleanup::post_application_cleanup();
                 app.exit(0);
             }
             _ => {}

@@ -1,12 +1,14 @@
+pub mod camera_rpc;
 pub mod commands;
 pub mod discovery;
 pub mod models;
+pub mod process_cleanup;
 pub mod tray;
 pub mod visca;
 pub mod window_manager;
 
 use std::sync::{Arc, Mutex};
-use tauri::Manager;
+use tauri::{Manager, WindowEvent};
 use commands::AppState;
 use discovery::{CameraRegistry, MdnsScanner};
 use visca::ViscaManager;
@@ -60,6 +62,14 @@ pub fn run() {
 
             Ok(())
         })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { .. } = event {
+                if window.label() == "main" {
+                    process_cleanup::post_application_cleanup();
+                    window.app_handle().exit(0);
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             commands::get_cameras,
             commands::scan_all_cameras,
@@ -83,6 +93,9 @@ pub fn run() {
             commands::minimize_window,
             commands::close_window,
             commands::save_window_state,
+            commands::set_window_size,
+            commands::camera_reboot,
+            commands::camera_get_health,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

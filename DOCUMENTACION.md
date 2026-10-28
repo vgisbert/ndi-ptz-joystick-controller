@@ -227,6 +227,17 @@ Existe una asimetría radical entre el tráfico de control cinemático y el trá
    * Reaseguramiento automático de `Focus.Mode = "Auto"` mediante HTTP JSON-RPC (puerto 8090) en un hilo nativo independiente de runtime, y botón táctil `[ENFOQUE]` en configuración.
 5. **Compactación Vertical de la Consola (312 px):**
    * Eliminación de las bandas y líneas vacías intermedias mediante empaquetado continuo (`justify-start gap-1`), retirada del pie redundante en ajustes con auto-guardado en el botón superior `VOLVER` y reducción de altura mínima a 250 px en `tauri.conf.json`.
+6. **Protocolo de Limpieza Pre y Post Aplicación (Windows Job Objects):**
+   * Asignación del proceso a un objeto de trabajo del kernel (`JobObject`) con la bandera `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`, garantizando el exterminio automático de cualquier proceso hijo huérfano.
+   * Limpieza preventiva de instancias previas zombi en el arranque (`main.rs`) antes de inicializar ventanas multimedia o sockets de red.
+7. **Resiliencia de Sockets UDP y Reinicio Remoto Seguro (Reboot):**
+   * Sockets UDP desacoplados que no colapsan con el error `WSAECONNRESET` (10054) cuando la cámara se reinicia físicamente.
+   * Endpoint de reinicio remoto seguro vía API HTTP/JSON-RPC con modal de confirmación, cuenta atrás interactiva de 18 segundos y reactivación automática de control.
+8. **Modo de Cámara y Rehabilitación de Nitidez:**
+   * Indicador compacto de estado de captura (`MODO MANUAL` / `ÓPTIMO`) y botón de recalibración táctica de nitidez (`[ REHABILITAR NITIDEZ ]`).
+9. **Telemetría en Vivo y Panel Unificado de Configuración:**
+   * Monitorización de salud en una sola línea horizontal continua (`VISCA UDP`, `HTTP 8090`, `FPS REAL: 25` constante según PAL 50Hz anti-flicker).
+   * Eliminación completa de duplicados de IP y modo manual en la interfaz, con altura optimizada a 465 px sin recortes.
 
 
 

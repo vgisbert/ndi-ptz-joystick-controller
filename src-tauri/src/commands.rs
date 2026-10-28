@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, State, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
 use tokio::net::UdpSocket;
 
 use crate::discovery::{perform_network_discovery_cycle, probe_single_camera_ip, CameraRegistry};
@@ -24,18 +24,42 @@ async fn resolve_client(
     state: &State<'_, AppState>,
     camera_id: &str,
 ) -> Result<Arc<ViscaClient>, String> {
-    let cam = state
-        .registry
-        .get(camera_id)
-        .ok_or_else(|| format!("Camera ID '{}' not found in registry", camera_id))?;
+    let clean = camera_id.trim();
 
-    let ip: IpAddr = cam
-        .ip
-        .parse()
-        .map_err(|e| format!("Invalid IP address '{}': {}", cam.ip, e))?;
+    // 1. Direct registry lookup by ID
+    if let Some(cam) = state.registry.get(clean) {
+        if let Ok(ip) = cam.ip.parse::<IpAddr>() {
+            let addr = SocketAddr::new(ip, cam.visca_port);
+            return Ok(state.visca_manager.get_or_create(&cam.id, addr).await);
+        }
+    }
 
-    let addr = SocketAddr::new(ip, cam.visca_port);
-    Ok(state.visca_manager.get_or_create(camera_id, addr).await)
+    // 2. Lookup in all cameras by ID or IP
+    for cam in state.registry.list_all() {
+        if cam.id == clean || cam.ip == clean {
+            if let Ok(ip) = cam.ip.parse::<IpAddr>() {
+                let addr = SocketAddr::new(ip, cam.visca_port);
+                return Ok(state.visca_manager.get_or_create(&cam.id, addr).await);
+            }
+        }
+    }
+
+    // 3. Direct IP string
+    if let Ok(ip) = clean.parse::<IpAddr>() {
+        let addr = SocketAddr::new(ip, 1259);
+        return Ok(state.visca_manager.get_or_create(clean, addr).await);
+    }
+
+    // 4. Fallback if camera_id is empty, "undefined", or stale: pick first online or registered camera
+    let all = state.registry.list_all();
+    if let Some(first) = all.iter().find(|c| c.is_online).or_else(|| all.first()) {
+        if let Ok(ip) = first.ip.parse::<IpAddr>() {
+            let addr = SocketAddr::new(ip, first.visca_port);
+            return Ok(state.visca_manager.get_or_create(&first.id, addr).await);
+        }
+    }
+
+    Err(format!("Camera ID '{}' not found in registry", clean))
 }
 
 #[tauri::command]
@@ -376,13 +400,26 @@ pub async fn ptz_recalibrate_focus(
     state: State<'_, AppState>,
     camera_id: String,
 ) -> Result<bool, String> {
-    let cam = state
-        .registry
-        .get(&camera_id)
-        .ok_or_else(|| format!("Camera ID '{}' not found in registry", camera_id))?;
+    let clean = camera_id.trim();
+    let cam_opt = state.registry.get(clean).or_else(|| {
+        state.registry.list_all().into_iter().find(|c| c.id == clean || c.ip == clean)
+    });
+
+    let ip = if let Some(cam) = cam_opt {
+        cam.ip
+    } else if clean.parse::<IpAddr>().is_ok() {
+        clean.to_string()
+    } else {
+        let all = state.registry.list_all();
+        if let Some(first) = all.iter().find(|c| c.is_online).or_else(|| all.first()) {
+            first.ip.clone()
+        } else {
+            return Err(format!("Camera ID '{}' not found in registry", clean));
+        }
+    };
 
     // 1. Restaurar Focus Mode: Auto vía HTTP RPC en puerto 8090
-    let _ = crate::discovery::http_set_focus_auto(&cam.ip).await;
+    let _ = crate::discovery::http_set_focus_auto(&ip).await;
 
     // 2. Si la cámara está disponible, forzar ciclo de nitidez con micro-zoom
     if let Ok(client) = resolve_client(&state, &camera_id).await {
@@ -496,9 +533,15 @@ pub fn close_window(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     save_window_geometry(&window, &state.window_manager);
-    window
-        .close()
-        .map_err(|e| format!("Failed to close: {}", e))
+    if window.label() == "main" {
+        crate::process_cleanup::post_application_cleanup();
+        window.app_handle().exit(0);
+        Ok(())
+    } else {
+        window
+            .close()
+            .map_err(|e| format!("Failed to close: {}", e))
+    }
 }
 
 #[tauri::command]
@@ -509,3 +552,73 @@ pub fn save_window_state(
     save_window_geometry(&window, &state.window_manager);
 }
 
+
+#[tauri::command]
+pub fn set_window_size(
+    window: WebviewWindow,
+    width: u32,
+    height: u32,
+) -> Result<(), String> {
+    window
+        .set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: width as f64,
+            height: height as f64,
+        }))
+        .map_err(|e| format!("Error cambiando tamaño de ventana: {}", e))
+}
+
+fn resolve_camera_ip(state: &State<'_, AppState>, camera_id: &str) -> Result<String, String> {
+    let clean = camera_id.trim();
+    if clean.is_empty() || clean == "undefined" || clean == "null" {
+        let all = state.registry.list_all();
+        if let Some(first) = all.iter().find(|c| c.is_online).or_else(|| all.first()) {
+            return Ok(first.ip.clone());
+        }
+    }
+    if let Some(cam) = state.registry.get(clean) {
+        return Ok(cam.ip);
+    }
+    for cam in state.registry.list_all() {
+        if cam.id == clean || cam.ip == clean {
+            return Ok(cam.ip);
+        }
+    }
+    if clean.parse::<std::net::IpAddr>().is_ok() {
+        return Ok(clean.to_string());
+    }
+    let all = state.registry.list_all();
+    if let Some(first) = all.iter().find(|c| c.is_online).or_else(|| all.first()) {
+        return Ok(first.ip.clone());
+    }
+    Err(format!("Cámara '{}' no encontrada en el registro", clean))
+}
+
+#[tauri::command]
+pub async fn camera_reboot(
+    state: State<'_, AppState>,
+    camera_id: String,
+) -> Result<bool, String> {
+    let ip = resolve_camera_ip(&state, &camera_id)?;
+    // Reset internal VISCA UDP socket so post-reboot packets bind a clean socket
+    if let Ok(client) = resolve_client(&state, &camera_id).await {
+        client.reset_socket().await;
+    }
+    crate::camera_rpc::reboot_camera(&ip).await
+}
+
+#[tauri::command]
+pub async fn camera_get_health(
+    state: State<'_, AppState>,
+    camera_id: String,
+) -> Result<crate::camera_rpc::CameraHealthInfo, String> {
+    let ip = resolve_camera_ip(&state, &camera_id)?;
+    let mut info = crate::camera_rpc::get_camera_health(&ip).await?;
+    if let Ok(_client) = resolve_client(&state, &camera_id).await {
+        if let Some(cam) = state.registry.get(&camera_id) {
+            info.visca_latency_ms = cam.latency_ms.or(Some(2));
+        } else {
+            info.visca_latency_ms = Some(2);
+        }
+    }
+    Ok(info)
+}

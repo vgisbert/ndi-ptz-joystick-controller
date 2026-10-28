@@ -103,6 +103,33 @@
             return true;
         },
 
+        async rebootCamera(cameraId) {
+            if (isTauri) {
+                return await window.__TAURI__.core.invoke('camera_reboot', { cameraId });
+            }
+            console.log('[NDI Mock] camera_reboot:', cameraId);
+            return true;
+        },
+
+        async getCameraHealth(cameraId) {
+            if (isTauri) {
+                return await window.__TAURI__.core.invoke('camera_get_health', { cameraId });
+            }
+            return {
+                is_online: true,
+                visca_latency_ms: 2,
+                http_ok: true,
+                http_rtt_ms: 35,
+                active_streams_count: 0,
+                total_readers: 0,
+                bitrate_mbps: 0.0,
+                fps: 25,
+                resolution: '1080p',
+                uptime_seconds: 0,
+                cpu_load_pct: 0.0
+            };
+        },
+
         async preset(cameraId, action, presetNum) {
             // action: 'recall' | 'store' | 'clear'
             if (isTauri) {
@@ -178,6 +205,12 @@
                 return await window.__TAURI__.core.invoke('close_window');
             }
             window.close();
+        },
+
+        async setWindowSize(width, height) {
+            if (isTauri) {
+                return await window.__TAURI__.core.invoke('set_window_size', { width, height });
+            }
         },
 
         onCameraDiscovered(callback) {

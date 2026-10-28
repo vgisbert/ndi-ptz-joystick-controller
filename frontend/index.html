@@ -216,7 +216,21 @@
   <script src="ndi_ptz_client.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      if (window.NDIPtz && window.NDIPtz.setWindowSize) {
+        window.NDIPtz.setWindowSize(360, 312);
+      }
       let activeCameraId = localStorage.getItem('ndi_active_cam') || '';
+      if (activeCameraId === 'undefined' || activeCameraId === 'null') { activeCameraId = ''; }
+
+      function getActiveCameraId() {
+        if (activeCameraId && activeCameraId !== 'undefined' && activeCameraId !== 'null') {
+          return activeCameraId;
+        }
+        if (onlineCameras.length > 0) {
+          return onlineCameras[0].id;
+        }
+        return '';
+      }
       let onlineCameras = [];
       let camerasMap = {};
 
@@ -306,13 +320,15 @@
           oledPresetBadge.textContent = window.I18n.t('badge_manual');
           clearActivePresetHighlight();
           const outX = isMirrorBtnActive ? normX : -normX;
-          window.NDIPtz.sendVector(activeCameraId, outX, normY, 1.0);
+          const targetCam = getActiveCameraId();
+          if (targetCam) { window.NDIPtz.sendVector(targetCam, outX, normY, 1.0); }
         }
       }
 
       function stopJoystickAndCenter() {
         setHandleVisual(0, 0, 0, 0);
-        window.NDIPtz.stop(activeCameraId);
+        const targetCam = getActiveCameraId();
+        if (targetCam) { window.NDIPtz.stop(targetCam); }
       }
 
       joystickRing.addEventListener('pointerdown', (e) => {
@@ -348,7 +364,8 @@
           oledPresetBadge.textContent = window.I18n.t('badge_manual');
           clearActivePresetHighlight();
           const outX = isMirrorBtnActive ? vecX : -vecX;
-          window.NDIPtz.sendVector(activeCameraId, outX, vecY, 1.0);
+          const targetCam = getActiveCameraId();
+          if (targetCam) { window.NDIPtz.sendVector(targetCam, outX, vecY, 1.0); }
         };
         const stopMove = (e) => {
           e.stopPropagation();
@@ -374,7 +391,8 @@
         setHandleVisual(0, 0, 0, 0);
         clearActivePresetHighlight();
         oledPresetBadge.textContent = window.I18n.t('badge_center');
-        await window.NDIPtz.home(activeCameraId);
+        const targetCam = getActiveCameraId();
+        if (targetCam) { await window.NDIPtz.home(targetCam); }
       }
 
       btnHomeCenter.addEventListener('click', (e) => {
@@ -390,12 +408,14 @@
           e.preventDefault();
           btn.blur();
           isPressed = true;
-          window.NDIPtz.zoom(activeCameraId, dir, 5);
+          const targetCam = getActiveCameraId();
+          if (targetCam) { window.NDIPtz.zoom(targetCam, dir, 5); }
         };
         const stopZoom = () => {
           if (!isPressed) return;
           isPressed = false;
-          window.NDIPtz.zoom(activeCameraId, 'stop');
+          const targetCam = getActiveCameraId();
+          if (targetCam) { window.NDIPtz.zoom(targetCam, 'stop'); }
         };
         btn.addEventListener('pointerdown', startZoom);
         btn.addEventListener('pointerup', stopZoom);
@@ -435,7 +455,8 @@
         const targetBtn = document.querySelector(`.btn-goto[data-goto="${num}"]`);
         const label = targetBtn ? targetBtn.getAttribute('data-label') : `P${num}`;
         oledPresetBadge.textContent = `P${num} ${label}`;
-        await window.NDIPtz.preset(activeCameraId, 'recall', num);
+        const targetCam = getActiveCameraId();
+        if (targetCam) { await window.NDIPtz.preset(targetCam, 'recall', num); }
       }
 
       gotoButtons.forEach((btn) => {
@@ -479,7 +500,8 @@
             isLongPress = true;
             if (visualTimer) clearTimeout(visualTimer);
 
-            await window.NDIPtz.preset(activeCameraId, 'store', num);
+            const targetCam = getActiveCameraId();
+            if (targetCam) { await window.NDIPtz.preset(targetCam, 'store', num); }
             currentActivePresetNum = num;
 
             btn.className = savedGotoClass;
@@ -656,9 +678,11 @@
           return;
         }
 
-        if (!onlineCameras.some((c) => c.id === activeCameraId)) {
-          activeCameraId = onlineCameras[0].id;
-          localStorage.setItem('ndi_active_cam', activeCameraId);
+        if (!onlineCameras.some((c) => c.id === activeCameraId) || !activeCameraId || activeCameraId === 'undefined') {
+          if (onlineCameras.length > 0) {
+            activeCameraId = onlineCameras[0].id;
+            localStorage.setItem('ndi_active_cam', activeCameraId);
+          }
         }
 
         onlineCameras.forEach((cam, idx) => {
@@ -687,7 +711,13 @@
       }
 
       function selectCamera(camId) {
-        if (!camId) return;
+        if (!camId || camId === 'undefined') {
+          if (onlineCameras.length > 0) {
+            camId = onlineCameras[0].id;
+          } else {
+            return;
+          }
+        }
         activeCameraId = camId;
         localStorage.setItem('ndi_active_cam', camId);
         isMirrorBtnActive = localStorage.getItem(`ndi_mirror_std_${camId}`) === '1';

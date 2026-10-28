@@ -29,6 +29,7 @@ FILES_TO_BACKUP = [
     "backup.py",
     
     # Documentación, auditorías técnicas y guías maestras
+    "docs",
     "DOCUMENTACION.md",
     "DOCUMENTACION_NUROUM_V403.md",
     "COMPARATIVA_METODOLOGIAS_DESARROLLO.md",

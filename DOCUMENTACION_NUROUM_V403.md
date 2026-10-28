@@ -259,6 +259,7 @@ colortemp = 4900
 ;auto:0,manual:1
 mode = 0
 compensation = 90
+;frecuencia anti-parpadeo: 0 = 60Hz (30fps NTSC), 1 = 50Hz (25fps PAL)
 frequency = 1
 
 [videoView]
@@ -356,6 +357,24 @@ Al desarrollar una aplicación propia receptora NDI (por ejemplo, un receptor ND
    * Aunque ambas cámaras compartan `p_ndi_name = "LOCALHOST (Nuroum Cam V403-)"`, el SDK de NDI permite especificar la dirección IP y puerto exactos en `NDIlib_source_t::p_url_address` (por ejemplo `"192.168.1.101:5961"` y `"192.168.1.102:5961"`, o `"192.168.1.101:5960"`), diferenciando cada cámara física por su IP/MAC sin depender del nombre duplicado.
 2. **Proxy / Reescritura del XML en `TCP 5960`:**
    * Alternativamente, si se utiliza descubrimiento estándar NDI, basta con interceptar el banner XML de 132 bytes del puerto `5960` para inyectar un atributo `name` único por cámara (según su MAC o IP) y redirigir el flujo `TCP 5961` en calidad nativa `1080p @ 30 fps`.
+
+### 7.4. Frecuencia de Red (50 Hz vs 60 Hz), Cadencia PAL/NTSC y Bug de Metadatos NDI
+
+Durante las pruebas de emisión y grabación multicámara se descubrió una característica técnica crítica del sensor y del módulo NDI (`mediaNdi.cpp` en `/var/hunter`):
+
+1. **Impacto del Ajuste de Frecuencia Anti-parpadeo (`NearSync` -> `50 Hz` vs. `60 Hz`):**
+   * En NearSync (o en `/mnt/mtd/Config/config.ini` bajo `[exposure] frequency`), la cámara permite conmutar la frecuencia de red:
+     * **`frequency = 0` (60 Hz / NTSC):** El sensor expone en múltiplos de 1/60 s y captura a **30.0 FPS constantes**.
+     * **`frequency = 1` (50 Hz / PAL):** Para evitar el parpadeo (*flicker*) bajo iluminación artificial de 50 Hz (Europa), el sensor expone en múltiplos de 1/50 s y conmuta su captura física en hardware a **25.0 FPS constantes**.
+2. **El Bug de Metadatos NDI en el Firmware de la Cámara:**
+   * Cuando la cámara opera en modo **50 Hz** y entrega físicamente **25.0 FPS reales** en el socket de red, **el módulo `mediaNdi.cpp` mantiene cableado de forma estática en la cabecera de trama NDI (`frame_rate_N = 30`, `frame_rate_D = 1`) el valor 30.0 FPS**.
+   * El firmware **nunca actualiza los descriptores NDI** al cambiar la frecuencia eléctrica a 50 Hz.
+   * **Consecuencia:** Cualquier software receptor que confíe en los metadatos de cabecera NDI reportará erróneamente `30.0 FPS`, mientras que una grabación a disco o un análisis de paquetes revelará la tasa real de **25 FPS** generada por el sensor.
+3. **Recomendación para Aplicaciones Receptoras:**
+   * Descartar el valor de `video_frame.frame_rate_N / video_frame.frame_rate_D` recibido en el SDK de NDI.
+   * Medir la cadencia real calculando los fotogramas físicos que arriban por segundo y normalizar mediante rangos broadcast anti-jitter:
+     * Rango `23.5` a `26.5 FPS` $\rightarrow$ Normalizar a **`25.0 FPS`** (PAL 50 Hz).
+     * Rango `28.5` a `31.5 FPS` $\rightarrow$ Normalizar a **`30.0 FPS`** (NTSC 60 Hz).
 
 ---
 

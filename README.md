@@ -17,12 +17,20 @@ El sistema fue concebido para resolver las particularidades de red y control cin
 
 ---
 
+## 📸 Capturas de la Interfaz
+
+| Consola Principal de Control | Panel Unificado de Configuración |
+| :---: | :---: |
+| <img src="docs/Pantalla_principal.png" alt="Consola Principal" width="360"> | <img src="docs/Pantalla_configuracion.png" alt="Panel de Configuración" width="360"> |
+
+---
+
 ## ✨ Características Principales
 
-* **Arquitectura Multiventana Desacoplada & Diseño Compacto (312 px):**
+* **Arquitectura Multiventana Desacoplada & Diseño Compacto (312 px / 465 px):**
   * **Consola Principal (`index.html`):** Control cinemático, telemetría y selector de cámaras con diseño compacto ajustado verticalmente a 312 px sin franjas vacías.
   * **Ventanas Flotantes Parametrizadas (`floating.html`):** Ventanas individuales e independientes por cámara con fijado *Always-on-Top*, minimizables a la bandeja del sistema (*Tray*).
-  * **Panel de Ajustes Táctico (`settings.html`):** Identificación 100% por IP, validación anti-duplicados de nombres en tiempo real (`¡REPETIDO!`), auto-guardado en el botón superior `VOLVER` y botón de recalibración rápida de nitidez `[ENFOQUE]`.
+  * **Panel de Ajustes Unificado (`settings.html`):** Identificación limpia por IP interactiva, validación anti-duplicados de nombres en tiempo real (`¡REPETIDO!`), selector y edición de presets 1-8 en vertical, modo de cámara con botón táctico `[ REHABILITAR NITIDEZ ]`, función de reinicio remoto seguro con cuenta atrás y telemetría de salud en línea única.
 * **Control Cinemático & Joystick Virtual:**
   * Control analógico continuo con filtrado de zona muerta (*deadzone*).
   * Modo **Creep Speed** (reducción al 25% para ajustes finos de encuadre).
@@ -31,12 +39,18 @@ El sistema fue concebido para resolver las particularidades de red y control cin
 * **Bancada de Presets Rápidos:**
   * 8 ranuras de memoria directa por cámara.
   * Modos duales unificados en el propio botón de selección: llamada directa instantánea (**GOTO**) y guardado seguro manteniendo pulsado 2 segundos (**MEM** con confirmación visual táctica).
-* **Motor de Red en Rust y Auto-Saneamiento:**
+* **Motor de Red en Rust, Resiliencia y Auto-Saneamiento:**
   * Demonio de autodescubrimiento mDNS / DNS-SD en puerto `UDP 5353` (`mdns-sd`).
   * Mecanismo de contingencia por tabla ARP enfocado en el OUI del fabricante (`98:6E:E8`).
-  * Cliente asíncrono VISCA-over-IP de baja latencia con Tokio UDP y consumo inferior a 1 kbps por cámara inactiva.
+  * Sockets UDP asíncronos no conectados protegidos contra caídas de socket por reinicio de cámara (`WSAECONNRESET` / 10054).
+  * Protocolo de reinicio remoto seguro vía API ZLMediaKit/RPC con modal de confirmación y reapertura automática de sockets.
+  * Diagnóstico en vivo de latencia de red (`VISCA UDP`), estado de servicio (`HTTP 8090`) y cadencia real normalizada a **25.0 FPS** (PAL 50 Hz).
   * Reaseguramiento automático de `Focus.Mode = "Auto"` vía HTTP JSON-RPC (puerto 8090) en hilo nativo universal desacoplado de runtime.
   * Soporte nativo para escalamiento multi-cámara ($N > 2$) con persistencia independiente por IP.
+* **Estabilidad y Ciclo de Vida del Proceso (Windows Job Objects):**
+  * Limpieza pre-aplicación en el arranque para eliminar instancias zombi huérfanas antes de inicializar puertos o ventanas.
+  * Vinculación del árbol de procesos al kernel de Windows mediante `JobObject` con límite `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`.
+  * Manejo unificado de cierre seguro en eventos `CloseRequested` y en el menú de bandeja (*Tray Quit*).
 * **Internacionalización (i18n):**
   * Soporte dinámico multilingüe en caliente sin recompilación: Español e Inglés extensibles a nuevos idiomas mediante edición de fichero plano.
 
@@ -67,6 +81,7 @@ Durante el desarrollo del proyecto se realizó una auditoría completa del firmw
 ## 📁 Estructura del Repositorio
 
 ```text
+├── docs/                         # Capturas de pantalla y recursos visuales
 ├── frontend/                     # Interfaz de usuario táctica (HTML5, Tailwind CSS, JS)
 │   ├── index.html                # Consola central / Hub monitor
 │   ├── floating.html             # Ventana flotante desacoplada de control PTZ
@@ -80,13 +95,15 @@ Durante el desarrollo del proyecto se realizó una auditoría completa del firmw
 │   ├── src/
 │   │   ├── main.rs / lib.rs      # Puntos de entrada del runtime
 │   │   ├── commands.rs           # Comandos Tauri IPC invocados desde la UI
+│   │   ├── camera_rpc.rs         # Cliente RPC/HTTP ligero para ZLMediaKit y telemetría
 │   │   ├── discovery.rs          # Demonio mDNS y escaneo de presencia ARP
 │   │   ├── models.rs             # Modelos de datos de cámaras y eventos
+│   │   ├── process_cleanup.rs    # Control de procesos Windows Job Objects anti-zombies
 │   │   ├── tray.rs               # Gestión de la bandeja del sistema (System Tray)
 │   │   ├── window_manager.rs     # Orquestación de ventanas flotantes independientes
 │   │   └── visca/
 │   │       ├── mod.rs
-│   │       └── client.rs         # Motor asíncrono VISCA-over-IP (UDP)
+│   │       └── client.rs         # Motor asíncrono VISCA-over-IP (UDP resiliente)
 │   └── tests/
 │       └── visca_protocol.rs     # Suite de pruebas unitarias del protocolo
 │

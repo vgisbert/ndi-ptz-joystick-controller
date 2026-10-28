@@ -124,7 +124,13 @@ impl ViscaClient {
         }
     }
 
-    /// Obtain or initialize connected Tokio UDP socket
+    /// Reset internal UDP socket (e.g. after camera reboot, network drop or error)
+    pub async fn reset_socket(&self) {
+        let mut guard = self.socket.lock().await;
+        *guard = None;
+    }
+
+    /// Obtain or initialize Tokio UDP socket (unconnected to avoid Windows WSAECONNRESET on target reboot)
     async fn get_socket(&self) -> Result<Arc<UdpSocket>, String> {
         let mut guard = self.socket.lock().await;
         if let Some(sock) = &*guard {
@@ -134,16 +140,13 @@ impl ViscaClient {
         let sock = UdpSocket::bind("0.0.0.0:0")
             .await
             .map_err(|e| format!("Failed to bind local UDP socket: {}", e))?;
-        sock.connect(self.target_addr)
-            .await
-            .map_err(|e| format!("Failed to connect UDP socket to {}: {}", self.target_addr, e))?;
 
         let arc_sock = Arc::new(sock);
         *guard = Some(arc_sock.clone());
         Ok(arc_sock)
     }
 
-    /// Send raw VISCA bytes directly over UDP
+    /// Send raw VISCA bytes directly over UDP using send_to
     pub async fn send_raw_bytes(&self, bytes: &[u8]) -> Result<(), String> {
         {
             let mut kin = self.kinematics.lock().await;
@@ -151,9 +154,11 @@ impl ViscaClient {
         }
         println!("[VISCA TX -> {}] {:02X?}", self.target_addr, bytes);
         let sock = self.get_socket().await?;
-        sock.send(bytes)
-            .await
-            .map_err(|e| format!("Failed to send UDP packet: {}", e))?;
+        if let Err(e) = sock.send_to(bytes, self.target_addr).await {
+            // Drop dead socket from cache so subsequent call creates a fresh socket
+            self.reset_socket().await;
+            return Err(format!("Failed to send UDP packet to {}: {}", self.target_addr, e));
+        }
         Ok(())
     }
 

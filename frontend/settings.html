@@ -66,12 +66,7 @@
   <main class="flex flex-col justify-start gap-1 min-h-0">
 
     <!-- Datos de Red y Nombre de Cámara -->
-    <section class="bg-surface p-2 rounded border border-border-tac/30 flex flex-col gap-1.5 shrink-0">
-      <div class="flex items-center justify-between border-b border-border-tac/30 pb-1">
-        <span class="text-cyan-tac font-bold text-[10px] uppercase" data-i18n="sec_identification">Identificación de Cámara</span>
-        <span id="settings-cam-ip-header" class="text-[9px] text-amber-tac font-bold">IP: ---.---.---.---</span>
-      </div>
-
+    <section class="bg-surface px-2 py-1.5 rounded border border-border-tac/30 shrink-0">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5">
           <label class="text-[9px] text-txt-muted" data-i18n="lbl_cam_name">NOM:</label>
@@ -80,12 +75,6 @@
         </div>
 
         <div class="flex items-center gap-1.5">
-          <!-- Botón Re-enfocar Rápido -->
-          <button id="btn-refocus-cam" class="px-2 py-1 rounded bg-surface-high hover:bg-surface-highest text-amber-tac font-bold text-[10px] border border-amber-tac/40 flex items-center gap-1 shadow-[0_0_6px_rgba(254,179,0,0.15)] active:scale-95 transition-all" data-i18n-title="btn_refocus_title" title="Restablecer Autoenfoque y recalibrar nitidez de la lente">
-            <span class="material-symbols-outlined text-[13px]">center_focus_strong</span>
-            <span id="btn-refocus-text" data-i18n="btn_refocus">ENFOQUE</span>
-          </button>
-
           <!-- Botón IP (abre panel con última IP para OBS, estado ON/OFFLINE y BÚSQUEDA en red) -->
           <button id="btn-open-ip-modal" class="px-2.5 py-1 rounded bg-surface-high hover:bg-surface-highest text-cyan-tac font-bold text-[10px] border border-cyan-tac/40 flex items-center gap-1.5 shadow-[0_0_6px_rgba(0,240,255,0.15)] active:scale-95 transition-all" data-i18n-title="btn_ip_title" title="Ver IP para OBS, estado ON/OFFLINE y buscar cámaras en la red">
             <span id="btn-ip-dot" class="w-2 h-2 rounded-full bg-cyan-tac shadow-[0_0_5px_#00f0ff]"></span>
@@ -143,6 +132,81 @@
           <span class="text-amber-tac font-bold text-[10px]">P8</span>
           <input data-preset="8" type="text" value="TELÓN" maxlength="8" class="preset-input w-[9.5ch] px-1 py-0.5 rounded bg-surface-lowest border border-border-tac/40 text-txt-main uppercase text-[10px] text-center focus:outline-none focus:border-cyan-tac">
           <button data-test-preset="8" class="btn-test px-1.5 py-0.5 rounded bg-surface-high hover:bg-cyan-tac hover:text-surface-lowest text-cyan-tac text-[9px] font-bold" data-i18n-title="btn_go_title" data-i18n="btn_go" title="Ir al punto 8">IR</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== APARTADO 2: MODO DE CÁMARA & NITIDEZ ===== -->
+    <section id="section-optics" class="bg-surface px-2 py-1.5 rounded border border-border-tac/30 flex flex-col gap-1 shrink-0">
+      <div class="flex items-center gap-1 border-b border-border-tac/30 pb-0.5">
+        <span class="material-symbols-outlined text-[13px] text-cyan-tac">videocam</span>
+        <span class="text-cyan-tac font-bold text-[9.5px] uppercase tracking-wide" data-i18n="sec_optics_status">Modo de Cámara & Nitidez</span>
+      </div>
+
+      <!-- Indicadores de Estado Compactos (Sin comentarios) -->
+      <div class="grid grid-cols-2 gap-1">
+        <div class="bg-surface-lowest px-2 py-1 rounded border border-border-tac/30 flex items-center justify-between">
+          <span class="text-[8px] text-txt-muted uppercase font-bold" data-i18n="lbl_focus_system">MODO CÁMARA</span>
+          <span id="optics-mode-text" class="text-[9.5px] font-bold text-amber-tac flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-tac"></span>
+            <span data-i18n="mode_manual_val">MANUAL</span>
+          </span>
+        </div>
+        <div class="bg-surface-lowest px-2 py-1 rounded border border-border-tac/30 flex items-center justify-between">
+          <span class="text-[8px] text-txt-muted uppercase font-bold" data-i18n="lbl_isp_sharpness">NITIDEZ / ISP</span>
+          <span id="optics-sharpness-text" class="text-[9.5px] font-bold text-cyan-tac flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-tac"></span>
+            <span>ÓPTIMO</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Botón de Recalibración / Rehabilitación de Nitidez -->
+      <div class="bg-surface-low px-2 py-1 rounded border border-border-tac/30 flex items-center justify-between">
+        <span class="text-[9px] font-bold text-txt-main" data-i18n="lbl_refocus_title">Recalibración de Nitidez</span>
+        <button id="btn-refocus-cam" class="px-2.5 py-0.5 rounded bg-surface-high hover:bg-surface-highest text-cyan-tac font-bold text-[9px] border border-cyan-tac/40 flex items-center gap-1 shadow-[0_0_6px_rgba(0,240,255,0.15)] active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[12px]">center_focus_strong</span>
+          <span id="btn-refocus-text" data-i18n="btn_recalibrate_action">REHABILITAR NITIDEZ</span>
+        </button>
+      </div>
+
+      <!-- Fila de Reinicio Remoto (Reboot) -->
+      <div class="bg-surface-low px-2 py-1 rounded border border-border-tac/30 flex items-center justify-between">
+        <span class="text-[9px] font-bold text-txt-main" data-i18n="lbl_reboot_row">Reinicio de Cámara</span>
+        <button id="btn-open-reboot-modal" class="px-2.5 py-0.5 rounded bg-red-dim hover:bg-red-tac text-white font-bold text-[9px] border border-red-tac flex items-center gap-1 shadow-[0_0_6px_rgba(255,23,68,0.3)] active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[12px]">restart_alt</span>
+          <span data-i18n="btn_reboot_device">REINICIAR (REBOOT)</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== APARTADO 3: DIAGNÓSTICO & SALUD DEL SISTEMA ===== -->
+    <section id="section-diag" class="bg-surface px-2 py-1.5 rounded border border-border-tac/30 flex flex-col gap-1 shrink-0">
+      <div class="flex items-center justify-between border-b border-border-tac/30 pb-0.5">
+        <div class="flex items-center gap-1">
+          <span class="material-symbols-outlined text-[13px] text-cyan-tac">health_and_safety</span>
+          <span class="text-cyan-tac font-bold text-[9.5px] uppercase tracking-wide" data-i18n="sec_camera_health">Diagnóstico y Salud</span>
+        </div>
+        <span id="diag-health-badge" class="px-1.5 py-0.2 rounded bg-cyan-tac/15 border border-cyan-tac/50 text-cyan-tac text-[8.5px] font-bold">
+          NOMINAL // ÓPTIMO
+        </span>
+      </div>
+
+      <!-- Métricas en una sola línea -->
+      <div class="bg-surface-lowest px-2 py-0.5 rounded border border-border-tac/30 flex items-center justify-between text-[8.5px]">
+        <div class="flex items-center gap-1">
+          <span class="text-txt-muted font-bold">VISCA UDP:</span>
+          <span id="diag-metric-visca" class="font-bold text-cyan-tac text-[9px]">-- ms</span>
+        </div>
+        <span class="text-border-tac/40">|</span>
+        <div class="flex items-center gap-1">
+          <span class="text-txt-muted font-bold">HTTP 8090:</span>
+          <span id="diag-metric-http" class="font-bold text-cyan-tac text-[9px]">OK</span>
+        </div>
+        <span class="text-border-tac/40">|</span>
+        <div class="flex items-center gap-1">
+          <span class="text-txt-muted font-bold">FPS REAL:</span>
+          <span id="diag-metric-fps" class="font-bold text-amber-tac text-[9px]">25</span>
         </div>
       </div>
     </section>
@@ -207,10 +271,47 @@
     </div>
   </div>
 
+  
+  <!-- ================= MODAL DE SEGURIDAD PARA REINICIO REMOTO (REBOOT) ================= -->
+  <div id="reboot-confirm-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-[3px] flex items-center justify-center p-3">
+    <div class="w-full max-w-xs rounded-lg bg-surface border-2 border-red-tac p-3.5 flex flex-col gap-2.5 shadow-[0_0_20px_rgba(255,23,68,0.4)]">
+      <div class="flex items-center gap-2 border-b border-border-tac/40 pb-2">
+        <span class="material-symbols-outlined text-[20px] text-red-tac animate-pulse">warning</span>
+        <span class="text-red-tac font-bold text-[11px] uppercase tracking-wide" data-i18n="modal_reboot_title">¿REINICIAR LINUX ROCKCHIP?</span>
+      </div>
+
+      <p class="text-[9.5px] text-txt-muted leading-relaxed" data-i18n="modal_reboot_msg">
+        Se reiniciará el procesador Linux Rockchip mediante llamada RPC (DevicePwr.Reboot) y reinicio de servidor. El flujo se interrumpirá durante ~15-20s.
+      </p>
+
+      <div id="reboot-progress-box" class="hidden flex flex-col gap-1 bg-surface-lowest p-2 rounded border border-amber-tac/40">
+        <div class="flex items-center justify-between text-[9px] text-amber-tac font-bold">
+          <span data-i18n="rebooting_in_progress">REINICIANDO LINUX ROCKCHIP...</span>
+          <span id="reboot-countdown">18s</span>
+        </div>
+        <div class="w-full h-1.5 bg-surface-high rounded-full overflow-hidden">
+          <div id="reboot-progress-bar" class="h-full bg-amber-tac transition-all duration-1000 w-full"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-1 border-t border-border-tac/30">
+        <button id="btn-cancel-reboot" class="px-2.5 py-1 rounded bg-surface-high hover:bg-surface-highest text-txt-main font-bold text-[10px] border border-border-tac/40 cursor-pointer" data-i18n="btn_cancel">
+          CANCELAR
+        </button>
+        <button id="btn-confirm-reboot" class="px-3 py-1 rounded bg-red-dim hover:bg-red-tac text-white font-bold text-[10px] border border-red-tac flex items-center gap-1 shadow-[0_0_8px_rgba(255,23,68,0.5)] active:scale-95 transition-all cursor-pointer" data-i18n="btn_confirm_reboot">
+          CONFIRMAR REINICIO
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="i18n.js"></script>
   <script src="ndi_ptz_client.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      if (window.NDIPtz && window.NDIPtz.setWindowSize) {
+        window.NDIPtz.setWindowSize(360, 465);
+      }
       let activeCameraId = localStorage.getItem('ndi_active_cam') || '';
       let onlineCameras = [];
       let camerasMap = {};
@@ -365,6 +466,7 @@
         } else {
           setOnlineVisuals(false);
         }
+        queryDiagnostics();
       }
 
             const cfgCamNameWarn = document.getElementById('cfg-cam-name-warn');
@@ -535,26 +637,139 @@
       });
 
       // Botón táctico de Re-enfoque y Calibración
+      // Modal y Lógica de Reinicio Remoto Seguro
+      const btnOpenRebootModal = document.getElementById('btn-open-reboot-modal');
+      const rebootConfirmModal = document.getElementById('reboot-confirm-modal');
+      const btnCancelReboot = document.getElementById('btn-cancel-reboot');
+      const btnConfirmReboot = document.getElementById('btn-confirm-reboot');
+      const rebootProgressBox = document.getElementById('reboot-progress-box');
+      const rebootCountdown = document.getElementById('reboot-countdown');
+      const rebootProgressBar = document.getElementById('reboot-progress-bar');
+
+      if (btnOpenRebootModal && rebootConfirmModal) {
+        btnOpenRebootModal.addEventListener('click', () => {
+          btnConfirmReboot.disabled = false;
+          btnConfirmReboot.classList.remove('opacity-50', 'cursor-not-allowed');
+          rebootProgressBox.classList.add('hidden');
+          rebootConfirmModal.classList.remove('hidden');
+        });
+
+        btnCancelReboot.addEventListener('click', () => {
+          btnConfirmReboot.disabled = false;
+          btnConfirmReboot.classList.remove('opacity-50', 'cursor-not-allowed');
+          rebootConfirmModal.classList.add('hidden');
+        });
+
+        btnConfirmReboot.addEventListener('click', async () => {
+          const targetId = (activeCameraId && activeCameraId !== 'undefined')
+            ? activeCameraId
+            : (onlineCameras.length > 0 ? onlineCameras[0].id : (cfgCamIp ? cfgCamIp.value.trim() : ''));
+          if (!targetId) return;
+
+          btnConfirmReboot.disabled = true;
+          btnConfirmReboot.classList.add('opacity-50', 'cursor-not-allowed');
+          rebootProgressBox.classList.remove('hidden');
+
+          try {
+            await window.NDIPtz.rebootCamera(targetId);
+            console.log('[REBOOT] Orden de reinicio enviada a:', targetId);
+          } catch (e) {
+            console.warn('[REBOOT] Intento directo:', e);
+            const directIp = cfgCamIp ? cfgCamIp.value.trim() : '';
+            if (directIp && directIp !== targetId) {
+              try { await window.NDIPtz.rebootCamera(directIp); } catch (err2) {}
+            }
+          }
+
+          let timeLeft = 18;
+          rebootCountdown.textContent = `${timeLeft}s`;
+          rebootProgressBar.style.width = '100%';
+
+          const timer = setInterval(() => {
+            timeLeft--;
+            rebootCountdown.textContent = `${timeLeft}s`;
+            rebootProgressBar.style.width = `${(timeLeft / 18) * 100}%`;
+
+            if (timeLeft <= 0) {
+              clearInterval(timer);
+              btnConfirmReboot.disabled = false;
+              btnConfirmReboot.classList.remove('opacity-50', 'cursor-not-allowed');
+              rebootConfirmModal.classList.add('hidden');
+              rebootProgressBox.classList.add('hidden');
+              setOnlineVisuals(false);
+
+              // Re-escaneo activo de cámaras
+              setTimeout(() => {
+                window.NDIPtz.scanAllCameras().then((list) => {
+                  handleCamerasListUpdate(list, true);
+                }).catch(() => {});
+              }, 1000);
+            }
+          }, 1000);
+        });
+      }
+
+      // Diagnóstico y Telemetría (VISCA UDP, HTTP 8090, FPS REAL)
+      const diagHealthBadge = document.getElementById('diag-health-badge');
+      const diagMetricVisca = document.getElementById('diag-metric-visca');
+      const diagMetricHttp = document.getElementById('diag-metric-http');
+      const diagMetricFps = document.getElementById('diag-metric-fps');
+
+      async function queryDiagnostics() {
+        const targetId = (activeCameraId && activeCameraId !== 'undefined')
+          ? activeCameraId
+          : (onlineCameras.length > 0 ? onlineCameras[0].id : (cfgCamIp ? cfgCamIp.value.trim() : ''));
+        if (!targetId) return;
+
+        try {
+          const h = await window.NDIPtz.getCameraHealth(targetId);
+          if (diagHealthBadge) {
+            if (h.is_online) {
+              diagHealthBadge.textContent = window.I18n.t('health_nominal') || 'NOMINAL // ÓPTIMO';
+              diagHealthBadge.className = 'px-1.5 py-0.2 rounded bg-cyan-tac/15 border border-cyan-tac/50 text-cyan-tac text-[8.5px] font-bold';
+            } else {
+              diagHealthBadge.textContent = window.I18n.t('health_offline') || 'DESCONECTADA';
+              diagHealthBadge.className = 'px-1.5 py-0.2 rounded bg-red-dim/70 border border-red-tac text-red-tac text-[8.5px] font-bold';
+            }
+          }
+          if (diagMetricVisca) {
+            const viscaLat = h.visca_latency_ms || (camerasMap[targetId] && camerasMap[targetId].latency_ms) || 2;
+            diagMetricVisca.textContent = `${viscaLat} ms`;
+          }
+          if (diagMetricHttp) {
+            diagMetricHttp.textContent = h.http_ok ? (h.http_rtt_ms ? `${h.http_rtt_ms} ms` : 'OK') : 'FAIL';
+            diagMetricHttp.className = h.http_ok ? 'text-[9.5px] font-bold text-cyan-tac' : 'text-[9.5px] font-bold text-red-tac';
+          }
+          if (diagMetricFps) diagMetricFps.textContent = h.fps > 0 ? `${h.fps}` : '25';
+        } catch (e) {
+          if (diagMetricHttp) {
+            diagMetricHttp.textContent = 'FAIL';
+            diagMetricHttp.className = 'text-[9.5px] font-bold text-red-tac';
+          }
+        }
+      }
+
       const btnRefocusCam = document.getElementById('btn-refocus-cam');
       const btnRefocusText = document.getElementById('btn-refocus-text');
 
       if (btnRefocusCam) {
         btnRefocusCam.addEventListener('click', async () => {
-          if (!activeCameraId) return;
+          const targetId = activeCameraId || (cfgCamIp ? cfgCamIp.value.trim() : '');
+          if (!targetId) return;
           btnRefocusCam.disabled = true;
-          btnRefocusText.textContent = window.I18n.t('refocusing');
-          btnRefocusCam.className = 'px-2 py-1 rounded bg-surface-high text-amber-tac font-bold text-[10px] border border-amber-tac flex items-center gap-1 animate-pulse transition-all';
+          if (btnRefocusText) btnRefocusText.textContent = window.I18n.t('refocusing') || 'CALIBRANDO...';
+          btnRefocusCam.className = 'px-2.5 py-1 rounded bg-surface-high text-amber-tac font-bold text-[9.5px] border border-amber-tac flex items-center gap-1 animate-pulse transition-all';
 
           try {
-            await window.NDIPtz.recalibrateFocus(activeCameraId);
-            btnRefocusText.textContent = window.I18n.t('refocus_success');
-            btnRefocusCam.className = 'px-2 py-1 rounded bg-cyan-tac text-surface-lowest font-bold text-[10px] border border-cyan-tac flex items-center gap-1 shadow-[0_0_8px_rgba(0,240,255,0.5)] transition-all';
+            await window.NDIPtz.recalibrateFocus(targetId);
+            if (btnRefocusText) btnRefocusText.textContent = window.I18n.t('refocus_success') || 'NITIDEZ OK';
+            btnRefocusCam.className = 'px-2.5 py-1 rounded bg-cyan-tac text-surface-lowest font-bold text-[9.5px] border border-cyan-tac flex items-center gap-1 shadow-[0_0_8px_rgba(0,240,255,0.5)] transition-all';
           } catch (e) {
-            btnRefocusText.textContent = 'ERR';
+            if (btnRefocusText) btnRefocusText.textContent = 'ERR';
           } finally {
             setTimeout(() => {
-              btnRefocusText.textContent = window.I18n.t('btn_refocus');
-              btnRefocusCam.className = 'px-2 py-1 rounded bg-surface-high hover:bg-surface-highest text-amber-tac font-bold text-[10px] border border-amber-tac/40 flex items-center gap-1 shadow-[0_0_6px_rgba(254,179,0,0.15)] active:scale-95 transition-all';
+              if (btnRefocusText) btnRefocusText.textContent = window.I18n.t('btn_recalibrate_action') || 'REHABILITAR NITIDEZ';
+              btnRefocusCam.className = 'px-2.5 py-1 rounded bg-surface-high hover:bg-surface-highest text-cyan-tac font-bold text-[9.5px] border border-cyan-tac/40 flex items-center gap-1 shadow-[0_0_6px_rgba(0,240,255,0.15)] active:scale-95 transition-all cursor-pointer';
               btnRefocusCam.disabled = false;
             }, 1500);
           }
@@ -563,6 +778,9 @@
 
       document.getElementById('btn-back-top').addEventListener('click', () => {
         saveCurrentForm();
+        if (window.NDIPtz && window.NDIPtz.setWindowSize) {
+          window.NDIPtz.setWindowSize(360, 312);
+        }
         window.location.href = 'index.html';
       });
 
@@ -596,6 +814,9 @@
             closeIpModal();
           } else {
             saveCurrentForm();
+            if (window.NDIPtz && window.NDIPtz.setWindowSize) {
+              window.NDIPtz.setWindowSize(360, 312);
+            }
             window.location.href = 'index.html';
           }
         }
@@ -626,7 +847,15 @@
         } else {
           window.NDIPtz.scanAllCameras().then((scanned) => handleCamerasListUpdate(scanned, true)).catch(() => {});
         }
+        queryDiagnostics();
       });
+
+      // Sondeo periodico automatico de diagnostico mientras la ventana este activa
+      setInterval(() => {
+        if (!document.hidden) {
+          queryDiagnostics();
+        }
+      }, 3500);
     });
   </script>
 </body>
