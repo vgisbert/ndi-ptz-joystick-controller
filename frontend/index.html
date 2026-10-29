@@ -215,7 +215,13 @@
   <script src="i18n.js"></script>
   <script src="ndi_ptz_client.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.NDIPtz && window.NDIPtz.syncConfigFromDisk) {
+        await window.NDIPtz.syncConfigFromDisk();
+      }
+      if (window.NDIPtz && window.NDIPtz.setSettingsActive) {
+        window.NDIPtz.setSettingsActive(false);
+      }
       if (window.NDIPtz && window.NDIPtz.setWindowSize) {
         window.NDIPtz.setWindowSize(360, 312);
       }
@@ -282,6 +288,7 @@
         btnMirrorPan.blur();
         isMirrorBtnActive = !isMirrorBtnActive;
         localStorage.setItem(`ndi_mirror_std_${activeCameraId}`, isMirrorBtnActive ? '1' : '0');
+        if (window.NDIPtz && window.NDIPtz.syncConfigToDisk) window.NDIPtz.syncConfigToDisk();
         updateMirrorPanUi();
       });
 
@@ -616,6 +623,9 @@
 
       function saveProfiles(profiles) {
         localStorage.setItem('ndi_cam_profiles', JSON.stringify(profiles));
+        if (window.NDIPtz && window.NDIPtz.syncConfigToDisk) {
+          window.NDIPtz.syncConfigToDisk();
+        }
       }
 
       function ensureCameraProfile(cam, index) {
@@ -720,6 +730,7 @@
         }
         activeCameraId = camId;
         localStorage.setItem('ndi_active_cam', camId);
+        if (window.NDIPtz && window.NDIPtz.syncConfigToDisk) window.NDIPtz.syncConfigToDisk();
         isMirrorBtnActive = localStorage.getItem(`ndi_mirror_std_${camId}`) === '1';
         updateMirrorPanUi();
 

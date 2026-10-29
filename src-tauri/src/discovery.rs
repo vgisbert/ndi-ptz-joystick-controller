@@ -685,17 +685,23 @@ pub fn start_visca_subnet_watcher(
     registry: Arc<CameraRegistry>,
     visca_manager: Arc<ViscaManager>,
     app_handle: AppHandle,
+    is_settings_active: Arc<std::sync::atomic::AtomicBool>,
 ) {
     tauri::async_runtime::spawn(async move {
-        // Immediate discovery scan at launch
+        // Immediate discovery scan at launch (Solo en el arranque de la aplicación)
+        println!("[DISCOVERY] Ejecutando escaneo inicial de red en el arranque...");
         perform_network_discovery_cycle(&registry, &visca_manager, Some(&app_handle), true).await;
+        println!("[DISCOVERY] Escaneo de arranque completado. Búsqueda periódica en pausa (solo activa en ajustes).");
 
         let mut interval = tokio::time::interval(Duration::from_secs(3));
         interval.tick().await;
         loop {
             interval.tick().await;
-            perform_network_discovery_cycle(&registry, &visca_manager, Some(&app_handle), false)
-                .await;
+            // Solo se ejecuta periódicamente si estamos en la ventana de configuración
+            if is_settings_active.load(std::sync::atomic::Ordering::Relaxed) {
+                perform_network_discovery_cycle(&registry, &visca_manager, Some(&app_handle), false)
+                    .await;
+            }
         }
     });
 }

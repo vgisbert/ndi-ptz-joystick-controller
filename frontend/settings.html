@@ -308,7 +308,13 @@
   <script src="i18n.js"></script>
   <script src="ndi_ptz_client.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.NDIPtz && window.NDIPtz.syncConfigFromDisk) {
+        await window.NDIPtz.syncConfigFromDisk();
+      }
+      if (window.NDIPtz && window.NDIPtz.setSettingsActive) {
+        window.NDIPtz.setSettingsActive(true);
+      }
       if (window.NDIPtz && window.NDIPtz.setWindowSize) {
         window.NDIPtz.setWindowSize(360, 465);
       }
@@ -348,6 +354,9 @@
 
       function saveProfiles(profiles) {
         localStorage.setItem('ndi_cam_profiles', JSON.stringify(profiles));
+        if (window.NDIPtz && window.NDIPtz.syncConfigToDisk) {
+          window.NDIPtz.syncConfigToDisk();
+        }
       }
 
       function ensureCameraProfile(cam, index) {
@@ -409,6 +418,7 @@
         if (!onlineCameras.some((c) => c.id === activeCameraId)) {
           activeCameraId = onlineCameras[0].id;
           localStorage.setItem('ndi_active_cam', activeCameraId);
+          if (window.NDIPtz && window.NDIPtz.syncConfigToDisk) window.NDIPtz.syncConfigToDisk();
         }
 
         onlineCameras.forEach((cam, idx) => {
@@ -436,6 +446,7 @@
         if (!camId) return;
         activeCameraId = camId;
         localStorage.setItem('ndi_active_cam', camId);
+        if (window.NDIPtz && window.NDIPtz.syncConfigToDisk) window.NDIPtz.syncConfigToDisk();
 
         const idx = Math.max(0, onlineCameras.findIndex((c) => c.id === camId));
         const defaultCamName = `${window.I18n.t('cam_prefix')} ${idx + 1}`;
@@ -778,6 +789,9 @@
 
       document.getElementById('btn-back-top').addEventListener('click', () => {
         saveCurrentForm();
+        if (window.NDIPtz && window.NDIPtz.setSettingsActive) {
+          window.NDIPtz.setSettingsActive(false);
+        }
         if (window.NDIPtz && window.NDIPtz.setWindowSize) {
           window.NDIPtz.setWindowSize(360, 312);
         }
@@ -814,6 +828,9 @@
             closeIpModal();
           } else {
             saveCurrentForm();
+            if (window.NDIPtz && window.NDIPtz.setSettingsActive) {
+              window.NDIPtz.setSettingsActive(false);
+            }
             if (window.NDIPtz && window.NDIPtz.setWindowSize) {
               window.NDIPtz.setWindowSize(360, 312);
             }
@@ -848,6 +865,12 @@
           window.NDIPtz.scanAllCameras().then((scanned) => handleCamerasListUpdate(scanned, true)).catch(() => {});
         }
         queryDiagnostics();
+      });
+
+      window.addEventListener('beforeunload', () => {
+        if (window.NDIPtz && window.NDIPtz.setSettingsActive) {
+          window.NDIPtz.setSettingsActive(false);
+        }
       });
 
       // Sondeo periodico automatico de diagnostico mientras la ventana este activa

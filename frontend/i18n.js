@@ -325,6 +325,9 @@ class I18nManager {
     this._currentLang = lang;
     try {
       localStorage.setItem(this.STORAGE_KEY, lang);
+      if (window.NDIPtz && window.NDIPtz.syncConfigToDisk) {
+        window.NDIPtz.syncConfigToDisk();
+      }
     } catch (e) {}
 
     this.applyToDocument();

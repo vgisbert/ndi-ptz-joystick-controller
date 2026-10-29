@@ -129,10 +129,16 @@ La interfaz visual reproduce fielmente el diseño industrial documentado en `STI
 
 ## 5. Estrategia de Portabilidad y Datos Locales
 
-Para asegurar que la aplicación sea **100% portable**:
-1. **Modo Portable Automático:** La aplicación comprueba si existe un archivo `portable.flag` o `config.json` en su propio directorio de ejecución. De ser así, guarda todos los perfiles, calibraciones de joystick y nombres de presets en la misma carpeta, sin escribir en `%APPDATA%` ni en el registro de Windows.
-2. **Exportación e Importación de Perfiles (.json):** Permite respaldar y cargar configuraciones completas de escena (ej. `nuroum_escenario_A.json`).
-3. **Escritura Directa en NVRAM:** Opción de sincronizar los nombres y presets en la memoria no volátil de las cámaras Nuroum V403 para que persistan a reinicios físicos del equipamiento.
+Para asegurar que la aplicación sea **100% portable y autónoma**, toda la información persistente se almacena localmente mediante la función canónica `get_app_base_dir()`:
+
+1. **Resolución Automática del Directorio Base:**
+   * **Modo Desarrollo (`arrancar.bat` / `cargo run`):** Los archivos de configuración se guardan en la misma carpeta raíz donde reside `arrancar.bat`.
+   * **Modo Portable / Release (`.exe` empaquetado):** Toda la información se guarda en la misma carpeta donde esté ubicado el ejecutable `.exe` (ej. `dist_portable\` o pendrive USB).
+2. **Archivos de Configuración Persistente:**
+   * **`config.json`:** Archivo JSON legible y estructurado que almacena todos los perfiles de cámara (IPs fijas, nombres, puertos VISCA/NDI, velocidades de joystick, zoom y enfoque), los 9 nombres de presets personalizados por cámara, la cámara activa seleccionada (`activeCameraId`), el idioma (`es`/`en`) y los ajustes de inversión de controles (*Mirror*). Se sincroniza de forma reactiva y bidireccional entre UI y disco.
+   * **`window_states.json`:** Almacena las geometrías de ventana multimonitor (coordenadas X/Y, dimensiones ancho/alto y estado siempre visible *Always on Top*).
+3. **Aislamiento Total de WebView2 (`.data/`):**
+   * Se redirige la variable de entorno de Windows `WEBVIEW2_USER_DATA_FOLDER` a la subcarpeta local `.data/` dentro del directorio base, impidiendo que el motor WebView2 escriba en `%LOCALAPPDATA%` y garantizando que el paquete pueda trasladarse entre equipos manteniendo todos los datos intactos.
 
 ---
 
@@ -238,6 +244,11 @@ Existe una asimetría radical entre el tráfico de control cinemático y el trá
 9. **Telemetría en Vivo y Panel Unificado de Configuración:**
    * Monitorización de salud en una sola línea horizontal continua (`VISCA UDP`, `HTTP 8090`, `FPS REAL: 25` constante según PAL 50Hz anti-flicker).
    * Eliminación completa de duplicados de IP y modo manual en la interfaz, con altura optimizada a 465 px sin recortes.
+10. **Búsqueda en Red Silenciosa y Estable (Solo Arranque y Ajustes):**
+    * El proceso de escaneo en red (tabla ARP de Windows `arp -a` y barrido UDP 1259) se ejecuta únicamente en el arranque de la aplicación y mientras se permanece dentro de la ventana de configuración (`settings.html`).
+    * En la ventana principal de operación (`index.html`), el escaneo programado en segundo plano queda completamente suspendido, evitando saturación de la cola ARP de Windows, latencias en los comandos VISCA y consumo innecesario de CPU y ancho de banda.
+11. **Persistencia Local Canónica en Carpeta del Ejecutable y `arrancar.bat`:**
+    * Implementación de la función `get_app_base_dir()` para unificar el guardado de `config.json`, `window_states.json` y la caché aislada de WebView2 (`.data/`) directamente en la carpeta del ejecutable o en la carpeta raíz de `arrancar.bat` en desarrollo.
 
 
 

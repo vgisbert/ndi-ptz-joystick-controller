@@ -25,10 +25,14 @@ bundle/
 *.7z
 *.tar.gz
 
-# Archivos generados automáticamente por Tauri
+# Archivos generados automáticamente por Tauri y runtime local
 src-tauri/gen/
 window_states.json
 **/window_states.json
+config.json
+**/config.json
+.data/
+**/.data/
 
 # Copias de seguridad locales y directorios temporales
 backups/
@@ -84,3 +88,7 @@ ehthumbs.db
 [Nn]et[Hh]ood
 [Pp]rint[Hh]ood
 *.lnk
+
+# WebView2 Portable Data Folder
+.data/
+**/.data/

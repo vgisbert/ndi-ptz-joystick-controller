@@ -42,6 +42,8 @@ El sistema fue concebido para resolver las particularidades de red y control cin
 * **Motor de Red en Rust, Resiliencia y Auto-Saneamiento:**
   * Demonio de autodescubrimiento mDNS / DNS-SD en puerto `UDP 5353` (`mdns-sd`).
   * Mecanismo de contingencia por tabla ARP enfocado en el OUI del fabricante (`98:6E:E8`).
+  * **Ciclo de Red Silencioso y Estable:** El escaneo ARP y barrido UDP solo se ejecuta en el arranque y dentro de Ajustes, manteniendo la consola principal en reposo total de red sin saturación.
+  * **Persistencia 100% Local y Portable:** Toda la configuración (`config.json`), geometrías de ventana (`window_states.json`) y datos de navegación (`.data/`) se guardan en la misma carpeta del ejecutable o en la carpeta de `arrancar.bat` en desarrollo.
   * Sockets UDP asíncronos no conectados protegidos contra caídas de socket por reinicio de cámara (`WSAECONNRESET` / 10054).
   * Protocolo de reinicio remoto seguro vía API ZLMediaKit/RPC con modal de confirmación y reapertura automática de sockets.
   * Diagnóstico en vivo de latencia de red (`VISCA UDP`), estado de servicio (`HTTP 8090`) y cadencia real normalizada a **25.0 FPS** (PAL 50 Hz).

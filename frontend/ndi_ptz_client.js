@@ -213,6 +213,92 @@
             }
         },
 
+        async setSettingsActive(active) {
+            if (isTauri) {
+                return await window.__TAURI__.core.invoke('set_settings_active', { active });
+            }
+            console.log('[NDI Mock] set_settings_active:', active);
+        },
+
+        async getAppConfig() {
+            if (isTauri) {
+                return await window.__TAURI__.core.invoke('get_app_config');
+            }
+            return {};
+        },
+
+        async saveAppConfig(config) {
+            if (isTauri) {
+                return await window.__TAURI__.core.invoke('save_app_config', { config });
+            }
+        },
+
+        async getAppBaseDir() {
+            if (isTauri) {
+                return await window.__TAURI__.core.invoke('get_app_base_dir_path');
+            }
+            return '';
+        },
+
+        async syncConfigFromDisk() {
+            if (!isTauri) return;
+            try {
+                const cfg = await window.__TAURI__.core.invoke('get_app_config');
+                if (cfg && typeof cfg === 'object' && Object.keys(cfg).length > 0) {
+                    if (cfg.profiles) {
+                        localStorage.setItem('ndi_cam_profiles', JSON.stringify(cfg.profiles));
+                    }
+                    if (cfg.activeCameraId) {
+                        localStorage.setItem('ndi_active_cam', cfg.activeCameraId);
+                    }
+                    if (cfg.language) {
+                        localStorage.setItem('ndi_ptz_language', cfg.language);
+                    }
+                    if (cfg.mirrorSettings && typeof cfg.mirrorSettings === 'object') {
+                        for (const [k, v] of Object.entries(cfg.mirrorSettings)) {
+                            localStorage.setItem(`ndi_mirror_std_${k}`, v);
+                        }
+                    }
+                    console.log('[NDI Config] Configuración sincronizada desde config.json.');
+                } else {
+                    await this.syncConfigToDisk();
+                }
+            } catch (e) {
+                console.warn('[NDI Config] Error al sincronizar config desde disco:', e);
+            }
+        },
+
+        async syncConfigToDisk() {
+            if (!isTauri) return;
+            try {
+                const rawProfiles = localStorage.getItem('ndi_cam_profiles') || localStorage.getItem('ndi_cam_profiles_mac');
+                const profiles = rawProfiles ? JSON.parse(rawProfiles) : {};
+                const activeCameraId = localStorage.getItem('ndi_active_cam') || '';
+                const language = localStorage.getItem('ndi_ptz_language') || 'es';
+
+                const mirrorSettings = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('ndi_mirror_std_')) {
+                        const camId = key.replace('ndi_mirror_std_', '');
+                        mirrorSettings[camId] = localStorage.getItem(key);
+                    }
+                }
+
+                const config = {
+                    activeCameraId,
+                    language,
+                    mirrorSettings,
+                    profiles
+                };
+
+                await window.__TAURI__.core.invoke('save_app_config', { config });
+                console.log('[NDI Config] Configuración guardada en config.json.');
+            } catch (e) {
+                console.warn('[NDI Config] Error al guardar config en disco:', e);
+            }
+        },
+
         onCameraDiscovered(callback) {
             if (isTauri && window.__TAURI__.event) {
                 return window.__TAURI__.event.listen('camera-discovered', (event) => {

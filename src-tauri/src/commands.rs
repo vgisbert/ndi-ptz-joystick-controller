@@ -18,6 +18,7 @@ pub struct AppState {
     pub registry: Arc<CameraRegistry>,
     pub visca_manager: Arc<ViscaManager>,
     pub window_manager: Arc<WindowManager>,
+    pub is_settings_active: Arc<std::sync::atomic::AtomicBool>,
 }
 
 async fn resolve_client(
@@ -621,4 +622,57 @@ pub async fn camera_get_health(
         }
     }
     Ok(info)
+}
+
+#[tauri::command]
+pub async fn set_settings_active(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    active: bool,
+) -> Result<(), String> {
+    let was_active = state.is_settings_active.swap(active, std::sync::atomic::Ordering::SeqCst);
+    if active && !was_active {
+        println!("[DISCOVERY] Ventana de configuración activa: ejecutando escaneo de red...");
+        let reg = state.registry.clone();
+        let vm = state.visca_manager.clone();
+        tauri::async_runtime::spawn(async move {
+            perform_network_discovery_cycle(&reg, &vm, Some(&app_handle), false).await;
+        });
+    } else if !active && was_active {
+        println!("[DISCOVERY] Ventana de configuración cerrada: escaneo programado pausado.");
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_app_config() -> Result<serde_json::Value, String> {
+    let path = crate::window_manager::get_app_base_dir().join("config.json");
+    if path.exists() {
+        let content = std::fs::read_to_string(&path)
+            .map_err(|e| format!("Error leyendo config.json: {}", e))?;
+        let val: serde_json::Value = serde_json::from_str(&content)
+            .map_err(|e| format!("Error parseando config.json: {}", e))?;
+        Ok(val)
+    } else {
+        Ok(serde_json::json!({}))
+    }
+}
+
+#[tauri::command]
+pub fn save_app_config(config: serde_json::Value) -> Result<(), String> {
+    let base_dir = crate::window_manager::get_app_base_dir();
+    let _ = std::fs::create_dir_all(&base_dir);
+    let path = base_dir.join("config.json");
+    let json_str = serde_json::to_string_pretty(&config)
+        .map_err(|e| format!("Error serializando config: {}", e))?;
+    std::fs::write(&path, json_str)
+        .map_err(|e| format!("Error guardando config.json: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_app_base_dir_path() -> String {
+    crate::window_manager::get_app_base_dir()
+        .to_string_lossy()
+        .to_string()
 }

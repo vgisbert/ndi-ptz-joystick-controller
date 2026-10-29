@@ -15,14 +15,21 @@ use visca::ViscaManager;
 use window_manager::WindowManager;
 
 pub fn run() {
+    let base_dir = window_manager::get_app_base_dir();
+    if std::env::var("WEBVIEW2_USER_DATA_FOLDER").is_err() {
+        let webview_dir = base_dir.join(".data");
+        std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &webview_dir);
+    }
     let registry = Arc::new(CameraRegistry::new());
     let visca_manager = Arc::new(ViscaManager::new());
     let window_manager = Arc::new(WindowManager::new());
+    let is_settings_active = Arc::new(std::sync::atomic::AtomicBool::new(false));
 
     let state = AppState {
         registry: registry.clone(),
         visca_manager: visca_manager.clone(),
         window_manager,
+        is_settings_active: is_settings_active.clone(),
     };
 
     tauri::Builder::default()
@@ -58,6 +65,7 @@ pub fn run() {
                 registry.clone(),
                 visca_manager.clone(),
                 app.handle().clone(),
+                is_settings_active.clone(),
             );
 
             Ok(())
@@ -96,6 +104,10 @@ pub fn run() {
             commands::set_window_size,
             commands::camera_reboot,
             commands::camera_get_health,
+            commands::set_settings_active,
+            commands::get_app_config,
+            commands::save_app_config,
+            commands::get_app_base_dir_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

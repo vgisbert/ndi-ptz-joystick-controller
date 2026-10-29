@@ -13,6 +13,8 @@ FILES_TO_BACKUP = [
     "package.json",
     "LICENSE",
     "README.md",
+    "config.json",
+    "window_states.json",
     
     # Frontend y recursos de interfaz
     "frontend",

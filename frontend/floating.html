@@ -250,6 +250,10 @@
       } catch (e) {}
     }
 
+    if (window.NDIPtz && window.NDIPtz.syncConfigFromDisk) {
+      window.NDIPtz.syncConfigFromDisk().then(() => applyPresetsLabels());
+    }
+
     // Inicializar estado de fijado (PIN)
     async function initPinState() {
       try {
